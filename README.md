@@ -26,7 +26,7 @@ Chi Tweet Scraper is a desktop app built with **Python**, **Tkinter**, and **Twi
 
 1.  **Clone the repository:**
     ```bash
-    git clone [https://github.com/Ojthecreator/Tweet_Scraper_app.git](https://github.com/YOUR_USERNAME/Tweet_Scraper_app.git)
+    git clone [https://github.com/OJTheCreator/Chi-Tweet-Scraper.git](https://github.com/OJTheCreator/Chi-Tweet-Scraper.git)
     cd Tweet_Scraper_app
     ```
 
@@ -61,11 +61,40 @@ Chi Tweet Scraper is a desktop app built with **Python**, **Tkinter**, and **Twi
 
 4.  **Click "Scrape"** 
 
+---Chi Tweet Scraper v1.0.0
+
+### 
+For a quick download, you can find the pre-compiled executable on the **[Releases](https://github.com/OJTheCreator/Chi-Tweet-Scraper/releases/tag/v1.0.0)** page. 
+
+This portable `.exe` file works on Windows and doesn't require any Python installation.
+
+NOTE The `.exe` file is mostly the read by AV as a false postive and would have to excluded from the antivirus
+
+### Project Structure
+
+Tweet_Scraper_app/
+│── src/
+│   ├── gui.py            - Tkinter GUI
+│   ├── scraper.py        - Twikit scraper logic
+│── create_cookie.py      - Cookie converter (EditThisCookie → Twikit format)
+│── data/
+│   └── exports/          - All Excel outputs
+│── requirements.txt
+│── README.md
+
+###  Tech Stack
+
+* **Python 3.10+**
+* **Tkinter** (GUI)
+* **[Twikit](https://github.com/d60/twikit)** (Twitter scraping)
+* **OpenPyXL** (Excel export)
+
 ---
 
-###  Build as Executable
+###  Contributing
 
-To create a portable `.exe` file for Windows:
+Contributions are always welcome! Please fork the repository and open a pull request with your changes.
 
-```bash
-pyinstaller --noconfirm --onefile --windowed src/gui.py
+### 🌐 Connect
+
+* **Email:** Datacreatorhub@gmail.com
