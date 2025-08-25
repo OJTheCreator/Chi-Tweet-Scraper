@@ -1,0 +1,28 @@
+# --- Python cache & bytecode ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# --- Virtual environment ---
+.venv/
+
+# --- Build & Distribution (packaging artifacts) ---
+build/
+dist/
+*.spec
+
+# --- Cookies / Secrets (ignore contents but keep folder structure) ---
+Cookies/*
+!Cookies/.gitkeep
+
+# --- Data & Exports (ignore contents but keep folder structure) ---
+Data/Exports/*
+!Data/Exports/.gitkeep
+
+# --- Logs ---
+*.log
+
+# --- OS junk files ---
+.DS_Store
+Thumbs.db
