@@ -9,16 +9,18 @@ import sys
 from PIL import Image, ImageTk
 
 # --- Project imports ---
-from create_cookie import convert_editthiscookie_to_twikit_format
-from scraper import scrape_tweets
+from src.create_cookie import convert_editthiscookie_to_twikit_format
+from src.scraper import scrape_tweets
 
 
 # Utility for PyInstaller resource path
 def resource_path(relative_path):
     try:
+        # When bundled by PyInstaller
         base_path = sys._MEIPASS
     except AttributeError:
-        base_path = os.path.abspath(os.path.dirname(__file__))
+        # When running normally
+        base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     return os.path.join(base_path, relative_path)
 
 
@@ -26,9 +28,8 @@ class TweetScraperApp:
     def __init__(self, root):
         self.root = root
         root.title("Chi Tweet Scraper")
-        root.geometry("800x700")
-        root.minsize(750, 600)  # Set minimum size
-        root.resizable(True, True)  # Allow both horizontal and vertical resizing
+        root.geometry("700x650")
+        root.resizable(True, False)
 
         # Configure root grid weights for responsive design
         root.columnconfigure(0, weight=1)
@@ -41,12 +42,9 @@ class TweetScraperApp:
         )
 
         # Create main container with padding
-        self.main_frame = ttk.Frame(root, padding="15")
+        self.main_frame = ttk.Frame(root, padding="20")
         self.main_frame.grid(row=0, column=0, sticky="nsew")
         self.main_frame.columnconfigure(0, weight=1)
-
-        # Configure row weights to make the log section expandable
-        self.main_frame.rowconfigure(5, weight=1)  # Log section will be at row 5
 
         self.create_widgets()
 
@@ -79,7 +77,7 @@ class TweetScraperApp:
 
         # Logo
         try:
-            logo_file = resource_path(os.path.join("..", "assets", "logo.png"))
+            logo_file = resource_path(os.path.join("assets", "logo.png"))
             img = Image.open(logo_file).resize((60, 60), Image.Resampling.LANCZOS)
             self.logo_img = ImageTk.PhotoImage(img)
             ttk.Label(header_frame, image=self.logo_img).grid(
@@ -307,18 +305,15 @@ class TweetScraperApp:
     def create_status_section(self, row):
         # Status and logs section
         log_frame = ttk.LabelFrame(self.main_frame, text="Activity Log", padding="10")
-        log_frame.grid(row=row, column=0, sticky="nsew")
+        log_frame.grid(row=row, column=0, sticky="nsew", pady=(0, 0))
         log_frame.columnconfigure(0, weight=1)
         log_frame.rowconfigure(0, weight=1)
 
-        # Create a frame for the text widget and scrollbar
-        text_frame = ttk.Frame(log_frame)
-        text_frame.grid(row=0, column=0, sticky="nsew")
-        text_frame.columnconfigure(0, weight=1)
-        text_frame.rowconfigure(0, weight=1)
+        # Make this section expandable
+        self.main_frame.rowconfigure(row, weight=1)
 
         self.log_text = ScrolledText(
-            text_frame, width=70, height=10, bg="#f8f9fa", font=("Consolas", 9)
+            log_frame, width=70, height=8, bg="#f8f9fa", font=("Consolas", 9)
         )
         self.log_text.grid(row=0, column=0, sticky="nsew")
 
@@ -617,11 +612,11 @@ Tips:
 
 
 if __name__ == "__main__":
-    # Ensure required directories exist
-    os.makedirs(os.path.join(os.path.dirname(__file__), "..", "cookies"), exist_ok=True)
-    os.makedirs(
-        os.path.join(os.path.dirname(__file__), "..", "data", "exports"), exist_ok=True
-    )
+    # Ensure required directories exist (PyInstaller-safe)
+    cookies_dir = resource_path("cookies")
+    exports_dir = resource_path(os.path.join("data", "exports"))
+    os.makedirs(cookies_dir, exist_ok=True)
+    os.makedirs(exports_dir, exist_ok=True)
 
     root = tk.Tk()
 
