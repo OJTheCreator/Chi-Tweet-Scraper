@@ -17,20 +17,23 @@ Chi Tweet Scraper is a desktop app built with **Python**, **Tkinter**, and **Twi
 
 ---
 
-### 📸 Screenshots
-![alt text](<Screenshot 2025-08-25 183747.png>)
+### Screenshot
+
+![alt text](assets/chitweetscraper.png)
 
 ---
 
 ###  Installation
 
-1.  **Clone the repository:**
+1. **Clone the repository:**
+
     ```bash
-    git clone [https://github.com/OJTheCreator/Chi-Tweet-Scraper.git](https://github.com/OJTheCreator/Chi-Tweet-Scraper.git)
-    cd Tweet_Scraper_app
+    git clone https://github.com/OJTheCreator/Chi-Tweet-Scraper.git
+    cd Chi-Tweet_Scraper_app
     ```
 
-2.  **Create and activate a virtual environment:**
+2. **Create and activate a virtual environment:**
+
     ```bash
     # For Windows
     python -m venv .venv
@@ -51,24 +54,24 @@ Chi Tweet Scraper is a desktop app built with **Python**, **Tkinter**, and **Twi
 ### Usage
 
 1.  **Launch the GUI:**
+
     ```bash
     python -m src.gui
     ```
 
-2.  **Paste your Twitter cookies** (copied from the **Cookie Editor** browser extension after logging in a twitter account on your browser).
+2. **Paste your Twitter cookies** (copied from the **Cookie Editor** browser extension after logging in a twitter account on your browser).
 
-3.  **Enter the Twitter username** and the **desired date range** in the provided fields.
+3. **Enter the Twitter username** and the **desired date range** in the provided fields.
 
-4.  **Click "Scrape"** 
+4. **Click "Scrape"** 
 
----Chi Tweet Scraper v1.0.0
+### Chi Tweet Scraper v1.0.0
 
-### 
 For a quick download, you can find the pre-compiled executable on the **[Releases](https://github.com/OJTheCreator/Chi-Tweet-Scraper/releases/tag/v1.0.0)** page. 
 
 This portable `.exe` file works on Windows and doesn't require any Python installation.
 
-NOTE The `.exe` file is mostly the read by AV as a false postive and would have to excluded from the antivirus
+NOTE The `.exe` file is mostly read by AV as a virus but it's false postive and would have to excluded from the antivirus
 
 ### Project Structure
 
@@ -82,7 +85,7 @@ Tweet_Scraper_app/
 │── requirements.txt
 │── README.md
 
-###  Tech Stack
+### Tech Stack
 
 * **Python 3.10+**
 * **Tkinter** (GUI)
@@ -95,6 +98,6 @@ Tweet_Scraper_app/
 
 Contributions are always welcome! Please fork the repository and open a pull request with your changes.
 
-### 🌐 Connect
+### Connect
 
 * **Email:** Datacreatorhub@gmail.com
