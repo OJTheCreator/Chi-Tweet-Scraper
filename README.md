@@ -1,19 +1,33 @@
-## 🐦 Chi Tweet Scraper
+# Chi Tweet Scraper
 
-<p align="center"> <img src="https://img.shields.io/badge/Python-3.10+-blue?style=for-the-badge&logo=python" /> <img src="https://img.shields.io/badge/Tkinter-GUI-orange?style=for-the-badge" /> <img src="https://img.shields.io/badge/Twikit-Scraper-green?style=for-the-badge" /> <img src="https://img.shields.io/badge/Export-Excel-success?style=for-the-badge&logo=microsoft-excel" /> </p>
+![Python Badge](https://img.shields.io/badge/Python-3.10+-blue?style=for-the-badge&logo=python)
+![Tkinter Badge](https://img.shields.io/badge/Tkinter-GUI-orange?style=for-the-badge)
+![Twikit Badge](https://img.shields.io/badge/Twikit-Scraper-green?style=for-the-badge)
+![Excel Badge](https://img.shields.io/badge/Export-Excel-success?style=for-the-badge&logo=microsoft-excel)
 
 Chi Tweet Scraper is a desktop app built with **Python**, **Tkinter**, and **Twikit** that lets you scrape tweets for any username within a chosen date range. It uses a cookie-based login system (via **EditThisCookie**) to stay authenticated, and exports all results into **.xlsx** or **.CSV** files for easy analysis.
 
 ---
 
-### ✨ Features
+## Features
 
-✅ **Simple GUI** – Enter username and a date range directly in the app.
-✅ **Secure Login** – Paste cookies from your browser; no passwords are ever stored.
-✅ **Export Ready** – Tweets are saved as Excel files in the `/data/exports` directory.
-✅ **Multi-User Support** – Scrape tweets from multiple usernames in a single session.
-✅ **Cookie Expiration Detection** – The app prompts you to refresh your cookies when they expire.
-✅ **Portable Build** – Can be used as `.exe` file for Windows users.
+- **Simple GUI**  
+    Enter a username and date range directly in the app.  
+
+- **Secure Login**  
+    Paste cookies from your browser; no passwords are stored.  
+
+- **Export Ready**  
+    Tweets are saved as Excel files in the `/data/exports` directory.  
+
+- **Multi-User Support**  
+    Scrape tweets from multiple usernames in a single session.  
+
+- **Cookie Expiration Detection**  
+    Get prompted to refresh your cookies when they expire.  
+
+- **Portable Build**  
+    Use the `.exe` file for Windows without requiring Python installation.  
 
 ---
 
@@ -23,7 +37,7 @@ Chi Tweet Scraper is a desktop app built with **Python**, **Tkinter**, and **Twi
 
 ---
 
-###  Installation
+### Installation
 
 1. **Clone the repository:**
 
@@ -44,7 +58,8 @@ Chi Tweet Scraper is a desktop app built with **Python**, **Tkinter**, and **Twi
     source .venv/bin/activate
     ```
 
-3.  **Install dependencies:**
+3. **Install dependencies:**
+
     ```bash
     pip install -r requirements.txt
     ```
@@ -53,7 +68,7 @@ Chi Tweet Scraper is a desktop app built with **Python**, **Tkinter**, and **Twi
 
 ### Usage
 
-1.  **Launch the GUI:**
+1. **Launch the GUI:**
 
     ```bash
     python -m src.gui
@@ -63,11 +78,11 @@ Chi Tweet Scraper is a desktop app built with **Python**, **Tkinter**, and **Twi
 
 3. **Enter the Twitter username** and the **desired date range** in the provided fields.
 
-4. **Click "Scrape"** 
+4. **Click "Scrape"**
 
 ### Chi Tweet Scraper v1.0.0
 
-For a quick download, you can find the pre-compiled executable on the **[Releases](https://github.com/OJTheCreator/Chi-Tweet-Scraper/releases/tag/v1.0.0)** page. 
+For a quick download, you can find the pre-compiled executable on the **[Releases](https://github.com/OJTheCreator/Chi-Tweet-Scraper/releases/tag/v1.0.0)** page.
 
 This portable `.exe` file works on Windows and doesn't require any Python installation.
 
@@ -75,20 +90,21 @@ NOTE The `.exe` file is mostly read by AV as a virus but it's false postive and 
 
 ### Project Structure
 
-
 ### Tech Stack
 
-* **Python 3.10+**
-* **Tkinter** (GUI)
-* **[Twikit](https://github.com/d60/twikit)** (Twitter scraping)
-* **OpenPyXL** (Excel export)
+- **Python 3.10+**
+
+- **Tkinter** (GUI)
+- **[Twikit](https://github.com/d60/twikit)** (Twitter scraping)
+
+- **OpenPyXL** (Excel export)
 
 ---
 
-###  Contributing
+### Contributing
 
 Contributions are always welcome! Please fork the repository and open a pull request with your changes.
 
 ### Connect
 
-* **Email:** Datacreatorhub@gmail.com
+- **Email:** <Datacreatorhub@gmail.com>
