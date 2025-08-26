@@ -28,8 +28,11 @@ class TweetScraperApp:
     def __init__(self, root):
         self.root = root
         root.title("Chi Tweet Scraper")
-        root.geometry("700x650")
-        root.resizable(True, False)
+        root.geometry("750x750")  # Fixed: Increased height to accommodate all content
+        root.resizable(True, True)  # Fixed: Allow both horizontal and vertical resizing
+        root.minsize(
+            750, 750
+        )  # Fixed: Increased minimum window size to fit all content
 
         # Configure root grid weights for responsive design
         root.columnconfigure(0, weight=1)
@@ -42,9 +45,17 @@ class TweetScraperApp:
         )
 
         # Create main container with padding
-        self.main_frame = ttk.Frame(root, padding="20")
+        self.main_frame = ttk.Frame(root, padding="15")  # Fixed: Reduced padding
         self.main_frame.grid(row=0, column=0, sticky="nsew")
         self.main_frame.columnconfigure(0, weight=1)
+
+        # Fixed: Configure proper row weights for all sections
+        self.main_frame.rowconfigure(0, weight=0)  # Header - fixed height
+        self.main_frame.rowconfigure(1, weight=0)  # Config - fixed height
+        self.main_frame.rowconfigure(2, weight=0)  # Search - fixed height
+        self.main_frame.rowconfigure(3, weight=0)  # Cookie - fixed height
+        self.main_frame.rowconfigure(4, weight=0)  # Controls - fixed height
+        self.main_frame.rowconfigure(5, weight=1)  # Status/Log - expandable
 
         self.create_widgets()
 
@@ -72,7 +83,9 @@ class TweetScraperApp:
     def create_header_section(self, row):
         # Header frame
         header_frame = ttk.Frame(self.main_frame)
-        header_frame.grid(row=row, column=0, sticky="ew", pady=(0, 20))
+        header_frame.grid(
+            row=row, column=0, sticky="ew", pady=(0, 10)
+        )  # Fixed: Reduced padding
         header_frame.columnconfigure(1, weight=1)
 
         # Logo
@@ -105,9 +118,13 @@ class TweetScraperApp:
     def create_config_section(self, row):
         # Configuration frame
         config_frame = ttk.LabelFrame(
-            self.main_frame, text="Configuration", padding="15"
+            self.main_frame,
+            text="Configuration",
+            padding="10",  # Fixed: Reduced padding
         )
-        config_frame.grid(row=row, column=0, sticky="ew", pady=(0, 15))
+        config_frame.grid(
+            row=row, column=0, sticky="ew", pady=(0, 10)
+        )  # Fixed: Reduced padding
         config_frame.columnconfigure(1, weight=1)
 
         # Export format
@@ -160,9 +177,13 @@ class TweetScraperApp:
     def create_search_section(self, row):
         # Search parameters frame
         search_frame = ttk.LabelFrame(
-            self.main_frame, text="Search Parameters", padding="15"
+            self.main_frame,
+            text="Search Parameters",
+            padding="10",  # Fixed: Reduced padding
         )
-        search_frame.grid(row=row, column=0, sticky="ew", pady=(0, 15))
+        search_frame.grid(
+            row=row, column=0, sticky="ew", pady=(0, 10)
+        )  # Fixed: Reduced padding
         search_frame.columnconfigure(1, weight=1)
 
         # Search mode
@@ -232,9 +253,13 @@ class TweetScraperApp:
         self.cookie_expanded = tk.BooleanVar(value=False)
 
         cookie_frame = ttk.LabelFrame(
-            self.main_frame, text="Twitter Cookies", padding="15"
+            self.main_frame,
+            text="Twitter Cookies",
+            padding="10",  # Fixed: Reduced padding
         )
-        cookie_frame.grid(row=row, column=0, sticky="ew", pady=(0, 15))
+        cookie_frame.grid(
+            row=row, column=0, sticky="ew", pady=(0, 10)
+        )  # Fixed: Reduced padding
         cookie_frame.columnconfigure(0, weight=1)
 
         # Toggle button
@@ -248,6 +273,8 @@ class TweetScraperApp:
 
         # Cookie input (initially hidden)
         self.cookie_input_frame = ttk.Frame(cookie_frame)
+        # Fixed: Configure column weight for proper expansion
+        self.cookie_input_frame.columnconfigure(0, weight=1)
 
         ttk.Label(self.cookie_input_frame, text="Paste cookie JSON:").grid(
             row=0, column=0, sticky="w", pady=(10, 5)
@@ -267,24 +294,33 @@ class TweetScraperApp:
     def create_controls_section(self, row):
         # Control buttons frame
         controls_frame = ttk.Frame(self.main_frame)
-        controls_frame.grid(row=row, column=0, sticky="ew", pady=(0, 15))
+        controls_frame.grid(
+            row=row, column=0, sticky="ew", pady=(0, 10)
+        )  # Fixed: Reduced padding
+        # Fixed: Configure column weights for proper layout
+        controls_frame.columnconfigure(0, weight=1)
 
         # Progress bar
         self.progress = ttk.Progressbar(
             controls_frame, length=300, mode="indeterminate"
         )
-        self.progress.grid(row=0, column=0, columnspan=4, sticky="ew", pady=(0, 10))
+        self.progress.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 10))
         self.progress.grid_remove()
+
+        # Status label and buttons frame
+        status_button_frame = ttk.Frame(controls_frame)
+        status_button_frame.grid(row=1, column=0, columnspan=2, sticky="ew")
+        status_button_frame.columnconfigure(0, weight=1)
 
         # Status label
         self.count_lbl = ttk.Label(
-            controls_frame, text="Ready to scrape", foreground="gray"
+            status_button_frame, text="Ready to scrape", foreground="gray"
         )
-        self.count_lbl.grid(row=1, column=0, sticky="w")
+        self.count_lbl.grid(row=0, column=0, sticky="w")
 
         # Control buttons
-        button_frame = ttk.Frame(controls_frame)
-        button_frame.grid(row=1, column=3, sticky="e")
+        button_frame = ttk.Frame(status_button_frame)
+        button_frame.grid(row=0, column=1, sticky="e")
 
         self.scrape_button = ttk.Button(
             button_frame, text="Start Scraping", command=self.start_scrape_thread
@@ -309,11 +345,16 @@ class TweetScraperApp:
         log_frame.columnconfigure(0, weight=1)
         log_frame.rowconfigure(0, weight=1)
 
-        # Make this section expandable
-        self.main_frame.rowconfigure(row, weight=1)
+        # Fixed: This was already correct, but ensure it's properly weighted
+        # This section should expand to fill remaining space
+        # (Already handled in __init__ with rowconfigure)
 
         self.log_text = ScrolledText(
-            log_frame, width=70, height=8, bg="#f8f9fa", font=("Consolas", 9)
+            log_frame,
+            width=70,
+            height=6,
+            bg="#f8f9fa",
+            font=("Consolas", 9),  # Fixed: Reduced height from 8 to 6
         )
         self.log_text.grid(row=0, column=0, sticky="nsew")
 
@@ -460,7 +501,7 @@ class TweetScraperApp:
         # UI state changes
         self.scrape_button.config(state="disabled")
         self.stop_btn.config(state="normal")
-        self.progress.grid(row=0, column=0, columnspan=4, sticky="ew", pady=(0, 10))
+        self.progress.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 10))
         self.progress.start(30)
         self.count_lbl.config(text="Initializing scraper...", foreground="blue")
         self.clear_logs()

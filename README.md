@@ -29,7 +29,7 @@ Chi Tweet Scraper is a desktop app built with **Python**, **Tkinter**, and **Twi
 
     ```bash
     git clone https://github.com/OJTheCreator/Chi-Tweet-Scraper.git
-    cd Chi-Tweet_Scraper_app
+    cd Chi-Tweet-Scraper
     ```
 
 2. **Create and activate a virtual environment:**
