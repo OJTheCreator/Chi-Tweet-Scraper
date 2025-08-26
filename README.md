@@ -75,15 +75,6 @@ NOTE The `.exe` file is mostly read by AV as a virus but it's false postive and 
 
 ### Project Structure
 
-Tweet_Scraper_app/
-│── src/
-│   ├── gui.py            - Tkinter GUI
-│   ├── scraper.py        - Twikit scraper logic
-│── create_cookie.py      - Cookie converter (EditThisCookie → Twikit format)
-│── data/
-│   └── exports/          - All Excel outputs
-│── requirements.txt
-│── README.md
 
 ### Tech Stack
 
