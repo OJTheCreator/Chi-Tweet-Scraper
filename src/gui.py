@@ -596,32 +596,37 @@ class TweetScraperApp:
             self._cancelled = True
 
     def show_guide(self):
-        guide_text = """How to Use Chi Tweet Scraper:
+        guide_text = """Welcome to Chi Tweet Scraper! Here's a step-by-step guide to help you get started:
 
-1. 🍪 Setup Cookies (Required):
-   • Export cookies from EditThisCookie browser extension
-   • Click "Show Cookie Input" and paste the JSON
-   • Click "Save Cookies"
+    1. 🍪 Setting Up Cookies (Required):
+       • First, install the "cookie-editor" browser extension (available for Chrome, Firefox, and Edge).
+       • Log in to your Twitter account in your browser.
+       • Use the cookie-editor extension to export your Twitter cookies as a JSON file.
+       • In the Chi Tweet Scraper app, click the "Show Cookie Input" button.
+       • Paste the copied JSON into the provided text box and click "Save Cookies."
 
-2. ⚙️ Configure Settings:
-   • Choose export format (Excel/CSV)
-   • Set save folder location
-   • Enable batch mode if scraping multiple users
+    2. ⚙️ Configuring the Settings:
+       • Choose the format for your exported data (Excel or CSV).
+       • Select the folder where you want the scraped data to be saved.
+       • If you want to scrape tweets for multiple users, enable "Batch mode" and upload a file containing the usernames.
 
-3. 🔍 Set Search Parameters:
-   • Choose Username or Keywords search
-   • Enter date range (YYYY-MM-DD format)
-   • For keywords: use comma separation
+    3. 🔍 Setting Search Parameters:
+       • Decide whether you want to search by "Username" or "Keywords."
+       • If searching by username, enter the Twitter username.
+       • If searching by keywords, enter the keywords separated by commas (e.g., "python, AI, data").
+       • Specify the date range for the tweets you want to scrape. Use the format YYYY-MM-DD (e.g., 2023-01-01 to 2023-12-31).
 
-4. ▶️ Start Scraping:
-   • Click "Start Scraping"
-   • Monitor progress in activity log
-   • Use "Stop" to cancel if needed
+    4. ▶️ Starting the Scraping Process:
+       • Click the "Start Scraping" button to begin.
+       • You can monitor the progress in the "Activity Log" section.
+       • If you need to stop the process, click the "Stop" button.
 
-Tips:
-• Use batch mode for multiple usernames
-• Date range helps focus your search
-• Check activity log for detailed progress"""
+    Tips for Best Results:
+    • Use "Batch mode" if you want to scrape tweets for multiple usernames at once.
+    • Narrow down your search by specifying a date range to focus on specific time periods.
+    • Check the "Activity Log" for detailed updates and progress information.
+
+    Happy scraping!"""
 
         # Create a custom dialog for better formatting
         guide_window = tk.Toplevel(self.root)
