@@ -1,7 +1,5 @@
 import os
 import json
-import tkinter as tk
-from tkinter import messagebox
 
 COOKIE_DIR = os.path.join(os.path.dirname(__file__), "..", "cookies")
 OUTPUT_FILE = os.path.join(COOKIE_DIR, "twikit_cookies.json")
@@ -9,10 +7,10 @@ OUTPUT_FILE = os.path.join(COOKIE_DIR, "twikit_cookies.json")
 
 def convert_editthiscookie_to_twikit_format(raw_cookie_text: str) -> bool:
     """
-        Convert raw JSON text from EditThisCookie into
+    Convert raw JSON text from EditThisCookie into
     a Twikit-compatible cookies file saved at cookies/twikit_cookies.json.
 
-        Returns True on success, False otherwise.
+    Returns True on success, False otherwise.
     """
     try:
         # Ensure cookies directory exists
@@ -47,6 +45,6 @@ if __name__ == "__main__":
         raw_text = f.read()
 
     if convert_editthiscookie_to_twikit_format(raw_text):
-        print(f"✅ Cookies saved to {OUTPUT_FILE}")
+        print(f"Cookies saved to {OUTPUT_FILE}")
     else:
-        print("❌ Failed to convert cookies. Check JSON format.")
+        print("Failed to convert cookies. Check JSON format.")
