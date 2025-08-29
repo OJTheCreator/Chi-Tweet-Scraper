@@ -87,8 +87,11 @@ For a quick download, you can find the pre-compiled executable on the **[Release
 This portable `.exe` file works on Windows and doesn't require any Python installation.
 
 NOTE The `.exe` file is mostly read by AV as a virus but it's false postive and would have to excluded from the antivirus
+Can create pyinstaller exe by running anfter setting up
 
-### Project Structure
+```bash
+python -m PyInstaller --onefile --noconsole --name "ChiTweetScraper" --icon="C:\Projects\DATA_SCIENCE\Tweet_Scraper_app\assets\logo.ico" --add-data "assets/logo.png;assets" src/gui.py
+```
 
 ### Tech Stack
 
