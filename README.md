@@ -3,7 +3,7 @@
 ![Python Badge](https://img.shields.io/badge/Python-3.10+-blue?style=for-the-badge&logo=python)
 ![Tkinter Badge](https://img.shields.io/badge/Tkinter-GUI-orange?style=for-the-badge)
 ![Twikit Badge](https://img.shields.io/badge/Twikit-Scraper-green?style=for-the-badge)
-![Excel Badge](https://img.shields.io/badge/Export-Excel-success?style=for-the-badge&logo=microsoft-excel)
+
 
 Chi Tweet Scraper is a desktop app built with **Python**, **Tkinter**, and **Twikit** that lets you scrape tweets for any username within a chosen date range. It uses a cookie-based login system (via **EditThisCookie**) to stay authenticated, and exports all results into **.xlsx** or **.CSV** files for easy analysis.
 
@@ -79,6 +79,14 @@ Chi Tweet Scraper is a desktop app built with **Python**, **Tkinter**, and **Twi
 3. **Enter the Twitter username** and the **desired date range** in the provided fields.
 
 4. **Click "Scrape"**
+
+### Video Tutorials
+
+For a comprehensive video guide on installing and setting up Chi Tweet Scraper, click the link below:  
+[![Installation Guide](https://img.shields.io/badge/YouTube-Installation%20Guide-red?style=for-the-badge&logo=youtube)](https://youtu.be/RKX2sgQVgBg)
+
+To learn how to use Chi Tweet Scraper effectively, watch the detailed walkthrough here:  
+[![How to Use Chi Tweet Scraper](https://img.shields.io/badge/YouTube-How%20to%20Use-blue?style=for-the-badge&logo=youtube)](https://youtu.be/AbdpX6QZLm4)
 
 ### Chi Tweet Scraper v1.0.0
 
