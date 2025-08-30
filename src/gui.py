@@ -7,6 +7,7 @@ from datetime import datetime
 import os
 import sys
 from PIL import Image, ImageTk
+import webbrowser
 
 # --- Project imports ---
 from src.create_cookie import convert_editthiscookie_to_twikit_format
@@ -598,41 +599,35 @@ class TweetScraperApp:
     def show_guide(self):
         guide_text = """Welcome to Chi Tweet Scraper! Here's a step-by-step guide to help you get started:
 
-        1. 🍪 Setting Up Cookies (Required):
-           • First, install the "cookie-editor" browser extension (available for Chrome, Firefox, and Edge).
-           • Log in to your Twitter account in your browser.
-           • Use the cookie-editor extension to export your Twitter cookies as a JSON file.
-           • In the Chi Tweet Scraper app, click the "Show Cookie Input" button.
-           • Paste the copied JSON into the provided text box and click "Save Cookies."
+    1. Setting Up Cookies (Required):
+    • Install the "cookie-editor" browser extension (Chrome/Firefox/Edge).
+    • Log in to Twitter in your browser.
+    • Export your cookies as JSON and paste them into Chi Tweet Scraper.
 
-        2. ⚙️ Configuring the Settings:
-           • Choose the format for your exported data (Excel or CSV).
-           • Select the folder where you want the scraped data to be saved.
-           • If you want to scrape tweets for multiple users, enable "Batch mode" and upload a file containing the usernames.
+    2. Configuring the Settings:
+    • Choose export format (Excel/CSV).
+    • Select save folder.
+    • Use batch mode to load multiple usernames from file.
 
-        3. 🔍 Setting Search Parameters:
-           • Decide whether you want to search by "Username" or "Keywords."
-           • If searching by username, enter the Twitter username.
-           • If searching by keywords, enter the keywords separated by commas (e.g., "python, AI, data").
-           • Specify the date range for the tweets you want to scrape. Use the format YYYY-MM-DD (e.g., 2023-01-01 to 2023-12-31).
+    3. Setting Search Parameters:
+    • Search by username or keywords.
+    • Enter a date range (YYYY-MM-DD).
 
-        4. ▶️ Starting the Scraping Process:
-           • Click the "Start Scraping" button to begin.
-           • You can monitor the progress in the "Activity Log" section.
-           • If you need to stop the process, click the "Stop" button.
+    4. Starting the Scraping Process:
+    • Click "Start Scraping" to begin.
+    • Monitor progress in the Activity Log.
+    • Use "Stop" if needed.
 
-        Tips for Best Results:
-        • Use "Batch mode" if you want to scrape tweets for multiple usernames at once.
-        • Narrow down your search by specifying a date range to focus on specific time periods.
-        • Check the "Activity Log" for detailed updates and progress information.
+    Tips:
+    • Use batch mode for multiple users.
+    • Narrow date ranges for better results.
+    • Check Activity Log for progress.
 
-        Happy scraping!
+    Installation Guide (YouTube):
+    https://youtu.be/RKX2sgQVgBg
 
-    For a comprehensive video guide on installing and setting up Chi Tweet Scraper, click the link below:  
-    [![Installation Guide](https://img.shields.io/badge/YouTube-Installation%20Guide-red?style=for-the-badge&logo=youtube)](https://youtu.be/RKX2sgQVgBg)
-
-    To learn how to use Chi Tweet Scraper effectively, watch the detailed walkthrough here:  
-    [![How to Use Chi Tweet Scraper](https://img.shields.io/badge/YouTube-How%20to%20Use-blue?style=for-the-badge&logo=youtube)](https://youtu.be/AbdpX6QZLm4)
+    How to Use Chi Tweet Scraper (YouTube):
+    https://youtu.be/AbdpX6QZLm4
     """
 
         # Create a custom dialog for better formatting
@@ -649,13 +644,33 @@ class TweetScraperApp:
         y = (guide_window.winfo_screenheight() // 2) - (450 // 2)
         guide_window.geometry(f"500x450+{x}+{y}")
 
-        # Add text widget with scrollbar
+        # Add text widget
         text_frame = ttk.Frame(guide_window, padding="20")
         text_frame.pack(fill="both", expand=True)
 
         text_widget = ScrolledText(text_frame, wrap=tk.WORD, font=("Segoe UI", 10))
         text_widget.pack(fill="both", expand=True)
+
+        # Insert main guide text
         text_widget.insert("1.0", guide_text)
+
+        # Make YouTube links clickable
+        def add_hyperlink(url, start, end):
+            text_widget.tag_add(url, start, end)
+            text_widget.tag_config(url, foreground="blue", underline=1)
+            text_widget.tag_bind(url, "<Button-1>", lambda e: webbrowser.open(url))
+
+        # Highlight & bind each link
+        start_idx = text_widget.search("https://youtu.be/RKX2sgQVgBg", "1.0", tk.END)
+        if start_idx:
+            end_idx = f"{start_idx}+{len('https://youtu.be/RKX2sgQVgBg')}c"
+            add_hyperlink("https://youtu.be/RKX2sgQVgBg", start_idx, end_idx)
+
+        start_idx = text_widget.search("https://youtu.be/AbdpX6QZLm4", "1.0", tk.END)
+        if start_idx:
+            end_idx = f"{start_idx}+{len('https://youtu.be/AbdpX6QZLm4')}c"
+            add_hyperlink("https://youtu.be/AbdpX6QZLm4", start_idx, end_idx)
+
         text_widget.config(state="disabled")
 
         # Close button
