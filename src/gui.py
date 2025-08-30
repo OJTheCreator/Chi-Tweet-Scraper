@@ -598,35 +598,42 @@ class TweetScraperApp:
     def show_guide(self):
         guide_text = """Welcome to Chi Tweet Scraper! Here's a step-by-step guide to help you get started:
 
-    1. 🍪 Setting Up Cookies (Required):
-       • First, install the "cookie-editor" browser extension (available for Chrome, Firefox, and Edge).
-       • Log in to your Twitter account in your browser.
-       • Use the cookie-editor extension to export your Twitter cookies as a JSON file.
-       • In the Chi Tweet Scraper app, click the "Show Cookie Input" button.
-       • Paste the copied JSON into the provided text box and click "Save Cookies."
+        1. 🍪 Setting Up Cookies (Required):
+           • First, install the "cookie-editor" browser extension (available for Chrome, Firefox, and Edge).
+           • Log in to your Twitter account in your browser.
+           • Use the cookie-editor extension to export your Twitter cookies as a JSON file.
+           • In the Chi Tweet Scraper app, click the "Show Cookie Input" button.
+           • Paste the copied JSON into the provided text box and click "Save Cookies."
 
-    2. ⚙️ Configuring the Settings:
-       • Choose the format for your exported data (Excel or CSV).
-       • Select the folder where you want the scraped data to be saved.
-       • If you want to scrape tweets for multiple users, enable "Batch mode" and upload a file containing the usernames.
+        2. ⚙️ Configuring the Settings:
+           • Choose the format for your exported data (Excel or CSV).
+           • Select the folder where you want the scraped data to be saved.
+           • If you want to scrape tweets for multiple users, enable "Batch mode" and upload a file containing the usernames.
 
-    3. 🔍 Setting Search Parameters:
-       • Decide whether you want to search by "Username" or "Keywords."
-       • If searching by username, enter the Twitter username.
-       • If searching by keywords, enter the keywords separated by commas (e.g., "python, AI, data").
-       • Specify the date range for the tweets you want to scrape. Use the format YYYY-MM-DD (e.g., 2023-01-01 to 2023-12-31).
+        3. 🔍 Setting Search Parameters:
+           • Decide whether you want to search by "Username" or "Keywords."
+           • If searching by username, enter the Twitter username.
+           • If searching by keywords, enter the keywords separated by commas (e.g., "python, AI, data").
+           • Specify the date range for the tweets you want to scrape. Use the format YYYY-MM-DD (e.g., 2023-01-01 to 2023-12-31).
 
-    4. ▶️ Starting the Scraping Process:
-       • Click the "Start Scraping" button to begin.
-       • You can monitor the progress in the "Activity Log" section.
-       • If you need to stop the process, click the "Stop" button.
+        4. ▶️ Starting the Scraping Process:
+           • Click the "Start Scraping" button to begin.
+           • You can monitor the progress in the "Activity Log" section.
+           • If you need to stop the process, click the "Stop" button.
 
-    Tips for Best Results:
-    • Use "Batch mode" if you want to scrape tweets for multiple usernames at once.
-    • Narrow down your search by specifying a date range to focus on specific time periods.
-    • Check the "Activity Log" for detailed updates and progress information.
+        Tips for Best Results:
+        • Use "Batch mode" if you want to scrape tweets for multiple usernames at once.
+        • Narrow down your search by specifying a date range to focus on specific time periods.
+        • Check the "Activity Log" for detailed updates and progress information.
 
-    Happy scraping!"""
+        Happy scraping!
+
+    For a comprehensive video guide on installing and setting up Chi Tweet Scraper, click the link below:  
+    [![Installation Guide](https://img.shields.io/badge/YouTube-Installation%20Guide-red?style=for-the-badge&logo=youtube)](https://youtu.be/RKX2sgQVgBg)
+
+    To learn how to use Chi Tweet Scraper effectively, watch the detailed walkthrough here:  
+    [![How to Use Chi Tweet Scraper](https://img.shields.io/badge/YouTube-How%20to%20Use-blue?style=for-the-badge&logo=youtube)](https://youtu.be/AbdpX6QZLm4)
+    """
 
         # Create a custom dialog for better formatting
         guide_window = tk.Toplevel(self.root)
