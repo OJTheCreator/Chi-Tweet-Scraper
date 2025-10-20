@@ -6,6 +6,14 @@ from datetime import datetime, timezone
 from twikit import Client, TooManyRequests
 from openpyxl import Workbook
 import logging
+import pandas as pd
+import re
+from collections import defaultdict
+
+TWEET_ID_PATTERN = re.compile(
+    r"^https?://(?:www\.)?(?:twitter\.com|x\.com)/\w+/status/(\d+)"
+)
+RATE_LIMIT_DELAY = 2  # seconds between requests
 
 # Default Paths (overridden by GUI if user picks custom folder)
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -500,3 +508,214 @@ def get_scrape_stats(output_path: str) -> dict:
         return {}
     except Exception:
         return {}
+
+
+async def scrape_tweet_links_file(
+    file_path: str,
+    export_format: str = "excel",
+    save_dir: str = DEFAULT_EXPORT_DIR,
+    progress_callback=None,
+    should_stop_callback=None,
+):
+    """
+    Scrape tweet details directly from a file of tweet links (.txt or .xlsx/.xls).
+
+    Each line (in .txt) or cell (in Excel) must contain a valid tweet URL.
+    Exports a file containing tweet data (likes, replies, views, etc.).
+    """
+
+    csv_file = None
+    client = None
+
+    try:
+        # Validate file existence
+        if not os.path.exists(file_path):
+            raise TwitterScraperError(f"File not found: {file_path}")
+
+        # Detect file extension
+        ext = os.path.splitext(file_path)[1].lower()
+        links = []
+
+        # Load links
+        if ext in [".xlsx", ".xls"]:
+            df = pd.read_excel(file_path, header=None)
+            links = df.iloc[:, 0].dropna().astype(str).tolist()
+        elif ext == ".txt":
+            with open(file_path, "r", encoding="utf-8") as f:
+                links = [line.strip() for line in f if line.strip()]
+        else:
+            raise TwitterScraperError("Unsupported file type. Use .txt or .xlsx/.xls")
+
+        if not links:
+            raise TwitterScraperError("No tweet links found in the provided file.")
+
+        # Validate and deduplicate links
+        valid_links = []
+        seen_links = set()
+        invalid_count = 0
+
+        for link in links:
+            if link in seen_links:
+                logger.info(f"Duplicate link skipped: {link}")
+                continue
+
+            if not TWEET_ID_PATTERN.match(link):
+                invalid_count += 1
+                logger.warning(f"Invalid tweet URL format: {link}")
+                if progress_callback:
+                    progress_callback(f"⚠️ Skipped invalid URL: {link}")
+                continue
+
+            valid_links.append(link)
+            seen_links.add(link)
+
+        if not valid_links:
+            raise TwitterScraperError(
+                f"No valid tweet links found. {invalid_count} links had invalid format."
+            )
+
+        # Authenticate Twikit client
+        if progress_callback:
+            progress_callback(f"🔑 Authenticating Twikit client...")
+
+        client = await authenticate()
+
+        # Prepare export file
+        os.makedirs(save_dir, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        base_filename = f"tweet_links_{timestamp}"
+        ext_out = "csv" if export_format.lower() == "csv" else "xlsx"
+        output_path = os.path.join(save_dir, f"{base_filename}.{ext_out}")
+
+        headers = [
+            "Date",
+            "Username",
+            "Display Name",
+            "Text",
+            "Retweets",
+            "Likes",
+            "Replies",
+            "Quotes",
+            "Views",
+            "Tweet ID",
+            "Tweet URL",
+            "Export Path",
+        ]
+
+        # Initialize file with context manager
+        if export_format.lower() == "csv":
+            csv_file = open(output_path, mode="w", newline="", encoding="utf-8")
+            writer = csv.writer(csv_file)
+            writer.writerow(headers)
+        else:
+            wb = Workbook()
+            ws = wb.active
+            ws.title = "Tweets"
+            ws.append(headers)
+
+        count = 0
+        failed = 0
+        skipped_no_data = 0
+        total_links = len(valid_links)
+
+        for i, link in enumerate(valid_links, 1):
+            if should_stop_callback and should_stop_callback():
+                if progress_callback:
+                    progress_callback("🛑 Scrape cancelled by user")
+                break
+
+            if progress_callback:
+                progress_callback(f"🔗 Processing link {i}/{total_links}")
+
+            try:
+                # Extract tweet ID using regex
+                match = TWEET_ID_PATTERN.match(link)
+                if not match:
+                    failed += 1
+                    logger.warning(f"Could not extract tweet ID from {link}")
+                    continue
+
+                tweet_id = match.group(1)
+                tweet = await client.get_tweet_by_id(tweet_id)
+                tweet_data = extract_tweet_data(tweet)
+
+                if not tweet_data:
+                    skipped_no_data += 1
+                    logger.info(f"No data extracted from tweet {tweet_id}")
+                    if progress_callback:
+                        progress_callback(
+                            f"⏭️ Skipped tweet {tweet_id}: no data extracted"
+                        )
+                    continue
+
+                row = [
+                    tweet_data["date"],
+                    tweet_data["username"],
+                    tweet_data["display_name"],
+                    tweet_data["text"],
+                    tweet_data["retweets"],
+                    tweet_data["likes"],
+                    tweet_data["replies"],
+                    tweet_data["quotes"],
+                    tweet_data["views"],
+                    tweet_data["tweet_id"],
+                    tweet_data["tweet_url"],
+                    os.path.abspath(output_path),
+                ]
+
+                if export_format.lower() == "csv":
+                    writer.writerow(row)
+                else:
+                    ws.append(row)
+
+                count += 1
+
+                if progress_callback:
+                    progress_callback(f"✅ Scraped {count}/{total_links}")
+
+                # Periodic save and rate limiting
+                if count % 20 == 0:
+                    if export_format.lower() == "csv":
+                        csv_file.flush()
+                    else:
+                        wb.save(output_path)
+
+                # Apply consistent rate limiting between requests
+                await asyncio.sleep(RATE_LIMIT_DELAY)
+
+            except Exception as e:
+                failed += 1
+                logger.warning(f"Failed to scrape {link}: {e}")
+                if progress_callback:
+                    progress_callback(f"⚠️ Error on link {i}: {e}")
+                await asyncio.sleep(2)  # gentle delay on error
+
+        # Final save
+        if export_format.lower() == "csv":
+            if csv_file:
+                csv_file.close()
+        else:
+            wb.save(output_path)
+
+        summary = f"🏁 Done: {count} scraped, {failed} failed, {skipped_no_data} skipped (no data). Export saved at: {output_path}"
+        if progress_callback:
+            progress_callback(summary)
+
+        logger.info(summary)
+        return output_path, count, failed
+
+    except Exception as e:
+        logger.error(f"Error scraping tweet links: {e}")
+        raise TwitterScraperError(f"Scraping tweet links failed: {e}")
+
+    finally:
+        # Ensure file is closed even if exception occurs
+        if csv_file and not csv_file.closed:
+            csv_file.close()
+
+        # Optionally close client if needed
+        if client:
+            try:
+                await client.close()
+            except Exception as e:
+                logger.warning(f"Error closing client: {e}")
