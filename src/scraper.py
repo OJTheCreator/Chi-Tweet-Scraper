@@ -103,42 +103,76 @@ def build_search_query(
 
 
 def extract_tweet_data(tweet) -> dict:
-    """Extract and normalize tweet data."""
+    """Extract and normalize tweet data with better error handling for different tweet object types."""
     try:
         # Parse creation date with better error handling
-        created_at = getattr(tweet, "created_at", "")
+        created_at = getattr(tweet, "created_at", "") or getattr(
+            tweet, "created_at_datetime", ""
+        )
         try:
             if created_at:
-                dt = datetime.strptime(created_at, "%a %b %d %H:%M:%S %z %Y")
+                if isinstance(created_at, str):
+                    dt = datetime.strptime(created_at, "%a %b %d %H:%M:%S %z %Y")
+                else:
+                    dt = created_at  # Already a datetime object
                 formatted_date = dt.strftime("%Y-%m-%d %H:%M:%S")
             else:
                 formatted_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         except (ValueError, TypeError):
             formatted_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        # Extract user information safely
+        # Extract user information safely - handle different tweet object structures
         user = getattr(tweet, "user", None)
-        username = getattr(user, "screen_name", "") if user else ""
-        display_name = getattr(user, "name", "") if user else ""
+        if not user:
+            # Try alternative attribute names
+            user = getattr(tweet, "author", None)
 
-        # Extract tweet metrics safely
+        username = ""
+        display_name = ""
+        if user:
+            username = getattr(user, "screen_name", "") or getattr(user, "username", "")
+            display_name = getattr(user, "name", "")
+
+        # Extract text - try multiple possible attributes
+        text = getattr(tweet, "text", "") or getattr(tweet, "full_text", "")
+        if text:
+            text = text.replace("\n", " ").replace("\r", " ")
+
+        # Extract tweet ID
+        tweet_id = getattr(tweet, "id", "") or getattr(tweet, "id_str", "")
+
+        # Extract tweet metrics safely with multiple fallback attempts
         data = {
             "date": formatted_date,
             "username": username,
             "display_name": display_name,
-            "text": getattr(tweet, "text", "").replace("\n", " ").replace("\r", " "),
+            "text": text,
             "retweets": getattr(tweet, "retweet_count", 0) or 0,
-            "likes": getattr(tweet, "favorite_count", 0) or 0,
+            "likes": getattr(tweet, "favorite_count", 0)
+            or getattr(tweet, "like_count", 0)
+            or 0,
             "replies": getattr(tweet, "reply_count", 0) or 0,
             "quotes": getattr(tweet, "quote_count", 0) or 0,
-            "views": getattr(tweet, "view_count", 0) or 0,
-            "tweet_id": getattr(tweet, "id", ""),
+            "views": (
+                getattr(tweet, "view_count", 0)
+                or getattr(tweet, "views", {}).get("count", 0)
+                if hasattr(tweet, "views")
+                else 0
+            ),
+            "tweet_id": tweet_id,
             "tweet_url": (
-                f"https://twitter.com/{username}/status/{getattr(tweet, 'id', '')}"
-                if username
+                f"https://twitter.com/{username}/status/{tweet_id}"
+                if username and tweet_id
                 else ""
             ),
         }
+
+        # Validate that we got at least some data
+        if not data["tweet_id"] or not data["text"]:
+            logger.warning(
+                f"Tweet missing critical data - ID: {data['tweet_id']}, has text: {bool(data['text'])}"
+            )
+            return None
 
         return data
 
@@ -636,7 +670,24 @@ async def scrape_tweet_links_file(
                     continue
 
                 tweet_id = match.group(1)
-                tweet = await client.get_tweet_by_id(tweet_id)
+
+                # Try to get the tweet with better error handling
+                try:
+                    tweet = await client.get_tweet_by_id(tweet_id)
+                except Exception as fetch_error:
+                    logger.warning(f"Failed to fetch tweet {tweet_id}: {fetch_error}")
+                    if (
+                        "deleted" in str(fetch_error).lower()
+                        or "not found" in str(fetch_error).lower()
+                    ):
+                        if progress_callback:
+                            progress_callback(
+                                f"⚠️ Tweet {tweet_id} not found (may be deleted)"
+                            )
+                    failed += 1
+                    await asyncio.sleep(RATE_LIMIT_DELAY)
+                    continue
+
                 tweet_data = extract_tweet_data(tweet)
 
                 if not tweet_data:
@@ -646,6 +697,7 @@ async def scrape_tweet_links_file(
                         progress_callback(
                             f"⏭️ Skipped tweet {tweet_id}: no data extracted"
                         )
+                    await asyncio.sleep(RATE_LIMIT_DELAY)
                     continue
 
                 row = [
@@ -685,9 +737,9 @@ async def scrape_tweet_links_file(
 
             except Exception as e:
                 failed += 1
-                logger.warning(f"Failed to scrape {link}: {e}")
+                logger.warning(f"Failed to scrape {link}: {str(e)}")
                 if progress_callback:
-                    progress_callback(f"⚠️ Error on link {i}: {e}")
+                    progress_callback(f"⚠️ Error on link {i}: {str(e)[:50]}")
                 await asyncio.sleep(2)  # gentle delay on error
 
         # Final save
@@ -713,9 +765,12 @@ async def scrape_tweet_links_file(
         if csv_file and not csv_file.closed:
             csv_file.close()
 
-        # Optionally close client if needed
+        # Note: Twikit client doesn't need explicit closing
+        # but keeping this structure for future compatibility
         if client:
             try:
-                await client.close()
+                # Twikit doesn't have a close method, but this is here for safety
+                if hasattr(client, "close"):
+                    await client.close()
             except Exception as e:
                 logger.warning(f"Error closing client: {e}")
