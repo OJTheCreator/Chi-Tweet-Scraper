@@ -177,6 +177,29 @@ class TweetScraperApp:
         """Resume link scraping from saved state."""
         # Switch to links tab
         self.notebook.select(1)
+        
+    def start_batch_scrape_with_resume(self, remaining_usernames, settings, state):
+        """Resume batch scraping with remaining users."""
+        self.log("🔄 Starting batch scrape with resume state...")
+        # Restore UI and start scraping
+        # For now, this will just call the normal start process
+        messagebox.showinfo(
+            "Resume",
+            f"Resuming batch scrape with {len(remaining_usernames)} remaining users."
+        )
+        # TODO: Implement full resume logic with state tracking
+
+    def start_single_scrape_with_resume(self, settings, state):
+        """Resume single user scraping."""
+        self.log("🔄 Starting single user scrape with resume state...")
+        messagebox.showinfo("Resume", "Resuming single user scrape.")
+        # TODO: Implement full resume logic with state tracking
+
+    def start_links_scrape_with_resume(self, settings, state):
+        """Resume link scraping."""
+        self.links_log("🔄 Starting link scrape with resume state...")
+        messagebox.showinfo("Resume", "Resuming link scrape.")
+        # TODO: Implement full resume logic with state tracking   
 
         # Restore settings
         settings = state.get("settings", {})
@@ -482,48 +505,6 @@ class TweetScraperApp:
             self.task = None
             self.current_task_type = None
 
-        # Configure root grid weights for responsive design
-        root.columnconfigure(0, weight=1)
-        root.rowconfigure(0, weight=1)
-
-        self.task = None
-        self.current_task_type = None  # Track which tab is running: "main" or "links"
-        self.file_path = None
-        self.links_file_path = None
-        self.save_dir = tk.StringVar(
-            value=os.path.join(os.path.dirname(__file__), "..", "data", "exports")
-        )
-
-        # Create main container with padding
-        self.main_frame = ttk.Frame(root, padding="10")
-        self.main_frame.grid(row=0, column=0, sticky="nsew")
-        self.main_frame.columnconfigure(0, weight=1)
-        self.main_frame.rowconfigure(0, weight=1)
-
-        # Create a Notebook for tabs
-        self.notebook = ttk.Notebook(self.main_frame)
-        self.notebook.grid(row=0, column=0, sticky="nsew")
-        self.notebook.columnconfigure(0, weight=1)
-        self.notebook.rowconfigure(0, weight=1)
-        self.notebook.bind("<<NotebookTabChanged>>", self.on_tab_changed)
-
-        # Create frames for tabs
-        self.main_tab = ttk.Frame(self.notebook, padding="8")
-        self.links_tab = ttk.Frame(self.notebook, padding="8")
-
-        self.notebook.add(self.main_tab, text="Main")
-        self.notebook.add(self.links_tab, text="Scrape by Links")
-
-        # Configure proper row weights for main tab
-        self.main_tab.columnconfigure(0, weight=1)
-        self.main_tab.rowconfigure(6, weight=1)  # Log section gets all extra space
-
-        # Create widgets in the main tab
-        self.create_widgets_main_tab()
-
-        # Create widgets for the links tab
-        self.create_links_tab()
-
     def on_tab_changed(self, event):
         """Handle tab switch - warn if scraping is in progress."""
         if self.task and not self.task.done():
@@ -680,30 +661,48 @@ class TweetScraperApp:
         )
 
         # Row 2: Date range
+        # Row 2: Date and Time range
         date_frame = ttk.Frame(search_frame)
         date_frame.grid(row=2, column=0, columnspan=2, sticky="ew", pady=(3, 0))
         date_frame.columnconfigure(1, weight=1)
-        date_frame.columnconfigure(3, weight=1)
+        date_frame.columnconfigure(5, weight=1)
 
+        # Start Date
         ttk.Label(date_frame, text="From:", font=("Segoe UI", 8)).grid(
             row=0, column=0, sticky="w", padx=(0, 3)
         )
-        self.start_entry = ttk.Entry(date_frame, width=12)
-        self.start_entry.grid(row=0, column=1, sticky="ew", padx=(0, 10))
+        self.start_entry = ttk.Entry(date_frame, width=10)
+        self.start_entry.grid(row=0, column=1, sticky="ew", padx=(0, 3))
 
+        # Start Time (optional)
+        self.start_time_entry = ttk.Entry(date_frame, width=9)
+        self.start_time_entry.grid(row=0, column=2, sticky="ew", padx=(0, 10))
+        self.start_time_entry.insert(0, "00:00:00")
+        self.start_time_entry.config(foreground='gray')
+        self.start_time_entry.bind('<FocusIn>', lambda e: self._on_time_focus_in(e, "00:00:00"))
+        self.start_time_entry.bind('<FocusOut>', lambda e: self._validate_time_entry(e))
+
+        # End Date
         ttk.Label(date_frame, text="To:", font=("Segoe UI", 8)).grid(
-            row=0, column=2, sticky="w", padx=(0, 3)
+            row=0, column=3, sticky="w", padx=(0, 3)
         )
-        self.end_entry = ttk.Entry(date_frame, width=12)
-        self.end_entry.grid(row=0, column=3, sticky="ew")
+        self.end_entry = ttk.Entry(date_frame, width=10)
+        self.end_entry.grid(row=0, column=4, sticky="ew", padx=(0, 3))
+
+        # End Time (optional)
+        self.end_time_entry = ttk.Entry(date_frame, width=9)
+        self.end_time_entry.grid(row=0, column=5, sticky="ew")
+        self.end_time_entry.insert(0, "23:59:59")
+        self.end_time_entry.config(foreground='gray')
+        self.end_time_entry.bind('<FocusIn>', lambda e: self._on_time_focus_in(e, "23:59:59"))
+        self.end_time_entry.bind('<FocusOut>', lambda e: self._validate_time_entry(e))
 
         ttk.Label(
             search_frame,
-            text="Format: YYYY-MM-DD",
+            text="Format: YYYY-MM-DD HH:MM:SS (time is optional, leave as default for full day)",
             font=("Segoe UI", 7),
             foreground="gray",
         ).grid(row=3, column=0, columnspan=2, sticky="w", pady=(2, 0))
-
         return row + 1
 
     def create_break_settings_section(self, row):
@@ -1039,7 +1038,54 @@ class TweetScraperApp:
             self.keyword_entry.grid(row=0, column=0, sticky="ew", padx=(0, 5))
             self.op_label.grid_remove()
             self.op_menu.grid(row=0, column=1, sticky="w")
+            
+    def _on_time_focus_in(self, event, default):
+        """Clear placeholder when time field is focused."""
+        widget = event.widget
+        current = widget.get()
+        if current == default or widget.cget('foreground') == 'gray':
+            widget.delete(0, tk.END)
+            widget.config(foreground='black')
 
+    def _validate_time_entry(self, event):
+        """Validate time entry format on focus out."""
+        widget = event.widget
+        time_str = widget.get().strip()
+        
+        # Determine default based on which widget
+        is_start = (widget == self.start_time_entry)
+        default = "00:00:00" if is_start else "23:59:59"
+        
+        if not time_str:
+            # Empty - use default
+            widget.insert(0, default)
+            widget.config(foreground='gray')
+            return
+        
+        try:
+            # Try to parse as HH:MM:SS
+            datetime.strptime(time_str, "%H:%M:%S")
+            widget.config(foreground='black')
+        except ValueError:
+            try:
+                # Try HH:MM format and convert
+                datetime.strptime(time_str, "%H:%M")
+                widget.delete(0, tk.END)
+                widget.insert(0, f"{time_str}:00")
+                widget.config(foreground='black')
+            except ValueError:
+                # Invalid format
+                widget.config(foreground='red')
+                messagebox.showwarning(
+                    "Invalid Time",
+                    "Time must be in HH:MM:SS or HH:MM format (24-hour).\n"
+                    "Example: 14:30:00 or 14:30",
+                    parent=self.root
+                )
+                widget.delete(0, tk.END)
+                widget.insert(0, default)
+                widget.config(foreground='gray')        
+                
     def log(self, msg):
         timestamp = datetime.now().strftime("%H:%M:%S")
         self.log_text.insert(tk.END, f"[{timestamp}] {msg}\n")
@@ -1123,14 +1169,99 @@ class TweetScraperApp:
             return
 
         try:
-            datetime.strptime(start, "%Y-%m-%d")
-            datetime.strptime(end, "%Y-%m-%d")
-        except ValueError:
+            # Get and validate time inputs
+            start_time = self.start_time_entry.get().strip()
+            end_time = self.end_time_entry.get().strip()
+            
+            # Default times if not provided or still placeholder
+            if not start_time or start_time == "00:00:00" or self.start_time_entry.cget('foreground') == 'gray':
+                start_time = "00:00:00"
+            
+            if not end_time or end_time == "23:59:59" or self.end_time_entry.cget('foreground') == 'gray':
+                end_time = "23:59:59"
+            
+            # Validate time formats
+            try:
+                datetime.strptime(start_time, "%H:%M:%S")
+            except ValueError:
+                try:
+                    # Try HH:MM format
+                    datetime.strptime(start_time, "%H:%M")
+                    start_time = f"{start_time}:00"
+                except ValueError:
+                    messagebox.showerror(
+                        "Invalid Time",
+                        "Start time must be in HH:MM:SS or HH:MM format.\n"
+                        "Example: 14:30:00 or 14:30"
+                    )
+                    return
+            
+            try:
+                datetime.strptime(end_time, "%H:%M:%S")
+            except ValueError:
+                try:
+                    datetime.strptime(end_time, "%H:%M")
+                    end_time = f"{end_time}:00"
+                except ValueError:
+                    messagebox.showerror(
+                        "Invalid Time",
+                        "End time must be in HH:MM:SS or HH:MM format.\n"
+                        "Example: 23:59:59 or 23:59"
+                    )
+                    return
+            
+            # Parse full datetime
+            start_dt = datetime.strptime(f"{start} {start_time}", "%Y-%m-%d %H:%M:%S")
+            end_dt = datetime.strptime(f"{end} {end_time}", "%Y-%m-%d %H:%M:%S")
+            today = datetime.now()
+
+            # Validate future dates
+            if end_dt > today:
+                response = messagebox.askyesno(
+                    "Future Date",
+                    f"End date/time is in the future: {end_dt.strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+                    "Use current date/time instead?",
+                    icon='warning'
+                )
+                if response:
+                    end_dt = today
+                    end = today.strftime("%Y-%m-%d")
+                    end_time = today.strftime("%H:%M:%S")
+                    self.end_entry.delete(0, tk.END)
+                    self.end_entry.insert(0, end)
+                    self.end_time_entry.delete(0, tk.END)
+                    self.end_time_entry.insert(0, end_time)
+                    self.end_time_entry.config(foreground='black')
+                else:
+                    return
+
+            if start_dt >= end_dt:
+                messagebox.showerror(
+                    "Invalid Range",
+                    f"Start date/time must be before end date/time.\n\n"
+                    f"Start: {start_dt.strftime('%Y-%m-%d %H:%M:%S')}\n"
+                    f"End: {end_dt.strftime('%Y-%m-%d %H:%M:%S')}"
+                )
+                return
+            
+            # Format for Twitter API (YYYY-MM-DD_HH:MM:SS)
+            start = start_dt.strftime("%Y-%m-%d_%H:%M:%S")
+            end = end_dt.strftime("%Y-%m-%d_%H:%M:%S")
+            
+            # Store datetime objects for progress estimation
+            self.start_dt = start_dt
+            self.end_dt = end_dt
+                
+        except ValueError as e:
             messagebox.showerror(
-                "Invalid Date", "Please use YYYY-MM-DD format for dates."
+                "Invalid Date/Time",
+                f"Please check your date and time format:\n"
+                f"Date: YYYY-MM-DD\n"
+                f"Time: HH:MM:SS (optional)\n\n"
+                f"Error: {str(e)}"
             )
             return
-
+        
         if not os.path.isdir(save_dir):
             messagebox.showerror(
                 "Invalid Path", f"Save directory not found:\n{save_dir}"
@@ -1193,11 +1324,43 @@ class TweetScraperApp:
         ).start()
 
     def _run_scrape(self, target, start, end, fmt, save_dir, break_settings):
+        """Enhanced scraping with intelligent error handling and resumption."""
+
         def progress_cb(msg):
             if isinstance(msg, str):
                 self.log(msg)
             else:
                 self.count_lbl.config(text=f"Tweets scraped: {msg}", foreground="green")
+
+        def cookie_expired_cb(error_msg):
+            """Called when cookies expire - pause and request new cookies."""
+            self.log(f"🔑 Authentication expired: {error_msg}")
+            self.paused_for_cookies = True
+            
+            # Schedule cookie dialog on main thread
+            self.root.after(0, self._show_cookie_expired_dialog_with_resume)
+            
+            # Wait for cookies to be updated
+            import time
+            while self.paused_for_cookies:
+                time.sleep(0.5)
+                if self.task and self.task.done():
+                    break
+
+        def network_error_cb(error_msg):
+            """Called when network fails - pause and wait for reconnection."""
+            self.log(f"🔌 Network error: {error_msg}")
+            self.paused_for_network = True
+            
+            # Schedule network dialog on main thread
+            self.root.after(0, lambda: self._show_network_error_dialog_with_resume(error_msg))
+            
+            # Wait for network to be restored
+            import time
+            while self.paused_for_network:
+                time.sleep(0.5)
+                if self.task and self.task.done():
+                    break
 
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
@@ -1207,28 +1370,71 @@ class TweetScraperApp:
 
                 async def batch_task():
                     total_tweets = 0
-                    for i, u in enumerate(target[1], 1):
+                    usernames = target[1]
+
+                    for i, u in enumerate(usernames):
                         if self.task and self.task.done():
                             break
-                        progress_cb(f"📥 Processing user {i}/{len(target[1])}: {u}")
 
-                        # FIX: Unpack all 3 return values (output, count, seen_ids)
-                        out, cnt, seen_ids = await scrape_tweets(
-                            username=u,
-                            start_date=start,
-                            end_date=end,
-                            keywords=None,
-                            use_and=False,
-                            export_format=fmt,
-                            progress_callback=progress_cb,
-                            should_stop_callback=lambda: (
-                                self.task.done() if self.task else False
-                            ),
-                            save_dir=save_dir,
-                            break_settings=break_settings,
+                        progress_cb(f"📥 Processing user {i+1}/{len(usernames)}: {u}")
+
+                        # Save state before each user
+                        self.save_scrape_state(
+                            mode="batch",
+                            usernames=usernames,
+                            current_index=i,
+                            current_username=u,
+                            tweets_scraped=total_tweets,
+                            settings={
+                                "start_date": start,
+                                "end_date": end,
+                                "export_format": fmt,
+                                "save_dir": save_dir,
+                            },
+                            file_path=self.file_path,
                         )
-                        total_tweets += cnt
-                        progress_cb(f"✅ {cnt} tweets saved for {u}")
+
+                        retry_user = True
+                        while retry_user:
+                            try:
+                                out, cnt, seen_ids = await scrape_tweets(
+                                    username=u,
+                                    start_date=start,
+                                    end_date=end,
+                                    keywords=None,
+                                    use_and=False,
+                                    export_format=fmt,
+                                    progress_callback=progress_cb,
+                                    should_stop_callback=lambda: (
+                                        self.task.done() if self.task else False
+                                    ),
+                                    cookie_expired_callback=cookie_expired_cb,
+                                    network_error_callback=network_error_cb,
+                                    save_dir=save_dir,
+                                    break_settings=break_settings,
+                                )
+
+                                total_tweets += cnt
+                                progress_cb(f"✅ {cnt} tweets saved for {u}")
+                                retry_user = False
+
+                            except CookieExpiredError:
+                                cookie_expired_cb(f"Cookies expired while scraping @{u}")
+                                # Loop will retry after cookies updated
+
+                            except NetworkError as e:
+                                network_error_cb(str(e))
+                                # Loop will retry after network restored
+                            
+                            except EmptyPagePromptException as e:
+                                # Ask user if they want to continue
+                                should_continue = self._show_empty_page_prompt(u, total_tweets)
+                                if not should_continue:
+                                    retry_user = False
+                                    progress_cb(f"⏩ Skipping rest of @{u} due to empty pages")
+
+                    # Clear state on success
+                    self.state_manager.clear_state()
                     return [], total_tweets
 
                 self.task = loop.create_task(batch_task())
@@ -1240,36 +1446,99 @@ class TweetScraperApp:
 
             else:
                 _, user, kws = target
-                self.task = loop.create_task(
-                    scrape_tweets(
-                        username=user,
-                        start_date=start,
-                        end_date=end,
-                        keywords=kws,
-                        use_and=(self.op_var.get() == "AND"),
-                        export_format=fmt,
-                        progress_callback=progress_cb,
-                        should_stop_callback=lambda: (
-                            self.task.done() if self.task else False
-                        ),
-                        save_dir=save_dir,
-                        break_settings=break_settings,
-                    )
+
+                # Save initial state
+                self.save_scrape_state(
+                    mode="single",
+                    current_username=user,
+                    keywords=kws,
+                    tweets_scraped=0,
+                    settings={
+                        "start_date": start,
+                        "end_date": end,
+                        "export_format": fmt,
+                        "save_dir": save_dir,
+                        "use_and": (self.op_var.get() == "AND"),
+                    },
                 )
-                # This already unpacks 3 values correctly
-                output, total, seen_ids = loop.run_until_complete(self.task)
-                self.log(
-                    f"🎉 Complete! {total} tweets saved to: {os.path.basename(output)}"
-                )
-                messagebox.showinfo("Success", f"✅ {total} tweets saved to:\n{output}")
+
+                retry_scrape = True
+                while retry_scrape:
+                    try:
+                        self.task = loop.create_task(
+                            scrape_tweets(
+                                username=user,
+                                start_date=start,
+                                end_date=end,
+                                keywords=kws,
+                                use_and=(self.op_var.get() == "AND"),
+                                export_format=fmt,
+                                progress_callback=progress_cb,
+                                should_stop_callback=lambda: (
+                                    self.task.done() if self.task else False
+                                ),
+                                cookie_expired_callback=cookie_expired_cb,
+                                network_error_callback=network_error_cb,
+                                save_dir=save_dir,
+                                break_settings=break_settings,
+                            )
+                        )
+                        output, total, seen_ids = loop.run_until_complete(self.task)
+
+                        # Clear state on success
+                        self.state_manager.clear_state()
+                        retry_scrape = False
+
+                        self.log(
+                            f"🎉 Complete! {total} tweets saved to: {os.path.basename(output)}"
+                        )
+                        messagebox.showinfo("Success", f"✅ {total} tweets saved to:\n{output}")
+
+                    except CookieExpiredError:
+                        cookie_expired_cb("Cookies expired during scraping")
+                        # Loop will retry after cookies updated
+
+                    except NetworkError as e:
+                        network_error_cb(str(e))
+                        # Loop will retry after network restored
+                    
+                    except EmptyPagePromptException as e:
+                        should_continue = self._show_empty_page_prompt(user or "keywords", None)
+                        if not should_continue:
+                            retry_scrape = False
+                            self.log("⏹️ Scraping stopped by user decision")
+
+                    except asyncio.CancelledError:
+                        self.log("⚠️ Scraping cancelled by user")
+                        self.count_lbl.config(text="Cancelled", foreground="orange")
+                        retry_scrape = False
+
+                    except Exception as e:
+                        self.log(f"❌ Unexpected error: {e}")
+                        self.count_lbl.config(text="Error occurred", foreground="red")
+                        messagebox.showerror("Error", f"An unexpected error occurred:\n{str(e)}")
+                        retry_scrape = False
+
+                    finally:
+                        self.progress.stop()
+                        self.progress.grid_remove()
+                        self.scrape_button.config(state="normal")
+                        self.stop_btn.config(state="disabled")
+                        self.count_lbl.config(text="Ready to scrape", foreground="gray")
+                        self.paused_for_cookies = False
+                        self.paused_for_network = False
+                        self.task = None
+                        self.current_task_type = None
 
         except asyncio.CancelledError:
             self.log("⚠️ Scraping cancelled by user")
             self.count_lbl.config(text="Cancelled", foreground="orange")
+
         except Exception as e:
             self.log(f"❌ Error: {e}")
             self.count_lbl.config(text="Error occurred", foreground="red")
             messagebox.showerror("Error", f"An error occurred:\n{str(e)}")
+
         finally:
             self.progress.stop()
             self.progress.grid_remove()
@@ -1278,7 +1547,7 @@ class TweetScraperApp:
             self.count_lbl.config(text="Ready to scrape", foreground="gray")
             self.task = None
             self.current_task_type = None
-
+                        
     def start_links_thread(self):
         """Start link-based scraping in a thread."""
         fmt = self.format_var.get().lower()
@@ -1352,9 +1621,8 @@ class TweetScraperApp:
         asyncio.set_event_loop(loop)
 
         try:
-
             async def links_task():
-                out, cnt, failed = await scrape_tweet_links_file(
+                out, cnt, failed, processed = await scrape_tweet_links_file(
                     file_path=links_path,
                     export_format=fmt,
                     save_dir=save_dir,
