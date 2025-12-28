@@ -17,7 +17,9 @@ TWEET_ID_PATTERN = re.compile(
 RATE_LIMIT_DELAY = 2  # seconds between requests
 MAX_NETWORK_RETRIES = 5
 RETRY_DELAYS = [30, 60, 120, 300, 600]  # Progressive delays in seconds
-MAX_PAGINATION_RETRIES = 3  # NEW: Retry pagination errors
+MAX_PAGINATION_RETRIES = 3  # Retry pagination errors
+MAX_CONSECUTIVE_EMPTY_PAGES = 10  # Allow more empty pages for large date ranges
+EMPTY_PAGE_PROMPT_THRESHOLD = 5  # Ask user after 5 empty pages
 
 # Default Paths (overridden by GUI if user picks custom folder)
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -47,10 +49,20 @@ class NetworkError(TwitterScraperError):
     pass
 
 
-async def authenticate(retry_callback=None):
+class EmptyPagePromptException(TwitterScraperError):
+    """Raised when user input is needed for empty pages."""
+
+    pass
+
+
+async def authenticate(retry_callback=None, should_stop_callback=None):
     """Authenticate Twikit client using stored cookies with retry logic."""
 
     for attempt in range(MAX_NETWORK_RETRIES):
+        # Check if we should stop
+        if should_stop_callback and should_stop_callback():
+            raise asyncio.CancelledError("Authentication stopped by user")
+
         try:
             client = Client(language="en-US")
 
@@ -62,11 +74,20 @@ async def authenticate(retry_callback=None):
             client.load_cookies(COOKIES_FILE)
 
             # Test authentication
+            if should_stop_callback and should_stop_callback():
+                raise asyncio.CancelledError("Authentication stopped by user")
+
             test_result = await client.search_tweet("(from:twitter)", product="Latest")
             logger.info("Authentication successful")
             return client
 
+        except asyncio.CancelledError:
+            raise
+
         except Exception as e:
+            if should_stop_callback and should_stop_callback():
+                raise asyncio.CancelledError("Authentication stopped by user")
+
             error_msg = str(e).lower()
 
             # Check if it's a cookie/auth error
@@ -103,7 +124,14 @@ async def authenticate(retry_callback=None):
                         retry_callback(
                             f"🔌 Network error. Retrying in {delay}s... (Attempt {attempt + 1}/{MAX_NETWORK_RETRIES})"
                         )
-                    await asyncio.sleep(delay)
+
+                    # Sleep with stop checking
+                    for _ in range(delay):
+                        if should_stop_callback and should_stop_callback():
+                            raise asyncio.CancelledError(
+                                "Authentication stopped by user"
+                            )
+                        await asyncio.sleep(1)
                     continue
                 else:
                     raise NetworkError(
@@ -168,24 +196,43 @@ async def handle_network_retry(
 
 
 def validate_date_range(start_date: str, end_date: str) -> tuple:
-    """Validate and parse date range."""
+    """Validate and parse date range - handles both YYYY-MM-DD and YYYY-MM-DD_HH:MM:SS formats."""
     try:
-        start_dt = datetime.strptime(start_date, "%Y-%m-%d") if start_date else None
-        end_dt = datetime.strptime(end_date, "%Y-%m-%d") if end_date else None
+        # Handle dates that may include time (YYYY-MM-DD_HH:MM:SS format)
+        start_dt = None
+        end_dt = None
+
+        if start_date:
+            # Split date and time if present
+            if "_" in start_date:
+                date_part = start_date.split("_")[0]
+            else:
+                date_part = start_date
+            start_dt = datetime.strptime(date_part, "%Y-%m-%d")
+
+        if end_date:
+            # Split date and time if present
+            if "_" in end_date:
+                date_part = end_date.split("_")[0]
+            else:
+                date_part = end_date
+            end_dt = datetime.strptime(date_part, "%Y-%m-%d")
+
         today = datetime.now()
 
-        # NEW: Validate future dates
+        # Validate future dates
         if end_dt and end_dt > today:
-            logger.warning(f"End date {end_date} is in the future. Using today's date.")
+            logger.warning(f"End date is in the future. Using today's date.")
             end_dt = today
-            end_date = today.strftime("%Y-%m-%d")
 
         if start_dt and end_dt and start_dt > end_dt:
             raise TwitterScraperError("Start date cannot be after end date.")
 
         return start_dt, end_dt
     except ValueError as e:
-        raise TwitterScraperError(f"Invalid date format. Use YYYY-MM-DD: {e}")
+        raise TwitterScraperError(
+            f"Invalid date format. Use YYYY-MM-DD (got error: {e})"
+        )
 
 
 def build_search_query(
@@ -217,8 +264,15 @@ def build_search_query(
 
     # Add date filters
     if start_date:
+        # If date contains time (YYYY-MM-DD_HH:MM:SS), extract only date part
+        if "_" in start_date:
+            start_date = start_date.split("_")[0]
         query += f" since:{start_date}"
+
     if end_date:
+        # If date contains time (YYYY-MM-DD_HH:MM:SS), extract only date part
+        if "_" in end_date:
+            end_date = end_date.split("_")[0]
         query += f" until:{end_date}"
 
     return query
@@ -321,6 +375,79 @@ def extract_tweet_data(tweet) -> dict:
         return None
 
 
+def sanitize_worksheet_name(name: str) -> str:
+    """
+    Intelligently sanitize worksheet name to comply with Excel naming rules.
+    Removes emojis, special characters, and invalid Excel characters while preserving readability.
+    """
+    import re
+
+    # Remove emojis and special unicode characters
+    emoji_pattern = re.compile(
+        "["
+        "\U0001f600-\U0001f64f"  # emoticons
+        "\U0001f300-\U0001f5ff"  # symbols & pictographs
+        "\U0001f680-\U0001f6ff"  # transport & map symbols
+        "\U0001f1e0-\U0001f1ff"  # flags (iOS)
+        "\U00002702-\U000027b0"
+        "\U000024c2-\U0001f251"
+        "\U0001f900-\U0001f9ff"  # Supplemental Symbols and Pictographs
+        "\U0001fa70-\U0001faff"  # Symbols and Pictographs Extended-A
+        "]+",
+        flags=re.UNICODE,
+    )
+
+    # Remove emojis
+    name = emoji_pattern.sub("", name)
+
+    # Excel worksheet names cannot contain these characters
+    invalid_chars = ["\\", "/", "*", "[", "]", ":", "?"]
+
+    # Replace problematic characters that often appear in usernames
+    replacements = {
+        "|": "-",
+        "(": "",
+        ")": "",
+        "<": "",
+        ">": "",
+        '"': "",
+        "{": "",
+        "}": "",
+        "&": "and",
+    }
+
+    sanitized = name
+
+    # Apply replacements
+    for old, new in replacements.items():
+        sanitized = sanitized.replace(old, new)
+
+    # Remove invalid Excel characters
+    for char in invalid_chars:
+        sanitized = sanitized.replace(char, "_")
+
+    # Remove any remaining non-ASCII or control characters
+    sanitized = "".join(
+        char for char in sanitized if ord(char) >= 32 and ord(char) < 127
+    )
+
+    # Clean up multiple spaces/underscores
+    sanitized = re.sub(r"[\s_]+", "_", sanitized)
+
+    # Remove leading/trailing underscores and spaces
+    sanitized = sanitized.strip("_ ")
+
+    # Excel worksheet names must be 31 characters or less
+    if len(sanitized) > 31:
+        sanitized = sanitized[:31].rstrip("_")
+
+    # Cannot be empty - use fallback
+    if not sanitized:
+        sanitized = f"Tweets_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+
+    return sanitized
+
+
 def should_include_tweet(
     tweet_data: dict, keywords: list = None, use_and: bool = False
 ) -> bool:
@@ -397,6 +524,7 @@ async def scrape_tweets(
     progress_callback=None,
     should_stop_callback=None,
     cookie_expired_callback=None,
+    network_error_callback=None,  # NEW
     save_every_n: int = 50,
     max_tweets: int = None,
     break_settings: dict = None,
@@ -467,7 +595,13 @@ async def scrape_tweets(
             else:
                 wb = Workbook()
                 ws = wb.active
-                ws.title = "Tweets"
+                # Sanitize worksheet name
+                if username:
+                    ws.title = sanitize_worksheet_name(username)
+                elif keywords:
+                    ws.title = sanitize_worksheet_name("_".join(keywords[:3]))
+                else:
+                    ws.title = "Tweets"
                 ws.append(headers)
 
         query = build_search_query(username, keywords, start_date, end_date, use_and)
@@ -476,7 +610,21 @@ async def scrape_tweets(
             progress_callback(f"🔍 Search query: {query}")
 
         # Authenticate with retry logic
-        client = await authenticate(retry_callback=progress_callback)
+        if progress_callback:
+            progress_callback("🔑 Authenticating...")
+
+        client = await authenticate(
+            retry_callback=progress_callback, should_stop_callback=should_stop_callback
+        )
+
+        # Check if stopped after authentication
+        if should_stop_callback and should_stop_callback():
+            if progress_callback:
+                progress_callback("🛑 Stopped after authentication")
+            return output_path, count, list(seen_tweet_ids)
+
+        if progress_callback:
+            progress_callback("🔍 Starting tweet search...")
 
         # Start search with network retry wrapper
         async def start_search():
@@ -564,21 +712,53 @@ async def scrape_tweets(
                     )
 
                 # NEW: Track empty pages
+                # Smart empty page handling
                 if page_tweets == 0:
                     empty_page_count += 1
+
                     if progress_callback:
                         progress_callback(
-                            f"📭 Empty page {empty_page_count}/{MAX_EMPTY_PAGES}"
+                            f"📭 Empty page {empty_page_count} (found {count} tweets so far)"
                         )
 
-                    if empty_page_count >= MAX_EMPTY_PAGES:
+                    # SMART DECISION MAKING
+                    if count == 0 and empty_page_count >= 3:
+                        # No tweets found at all after 3 pages - likely no results
                         if progress_callback:
                             progress_callback(
-                                "✅ No more tweets available after checking multiple pages"
+                                "❌ No tweets found matching your criteria"
                             )
                         break
+
+                    elif empty_page_count == EMPTY_PAGE_PROMPT_THRESHOLD:
+                        # We've found tweets but now hitting empty pages - ask user
+                        if progress_callback:
+                            progress_callback(
+                                f"⚠️ Hit {EMPTY_PAGE_PROMPT_THRESHOLD} consecutive empty pages after finding {count} tweets. "
+                                "This could be a gap in the timeline or end of results."
+                            )
+
+                        # This will trigger a GUI prompt
+                        raise EmptyPagePromptException(
+                            f"Hit {empty_page_count} empty pages. Found {count} tweets so far."
+                        )
+
+                    elif empty_page_count >= MAX_CONSECUTIVE_EMPTY_PAGES:
+                        # Too many empty pages - stop
+                        if progress_callback:
+                            progress_callback(
+                                f"✅ Stopping after {empty_page_count} consecutive empty pages. "
+                                f"Collected {count} tweets total."
+                            )
+                        break
+
                 else:
-                    empty_page_count = 0  # Reset if we found tweets
+                    # Found tweets - reset counter
+                    if empty_page_count > 0 and progress_callback:
+                        progress_callback(
+                            f"✅ Found more tweets after {empty_page_count} empty pages"
+                        )
+                    empty_page_count = 0
 
                 # NEW: Improved pagination with retry logic
                 pagination_retry = 0
@@ -629,6 +809,7 @@ async def scrape_tweets(
                         error_msg = str(e).lower()
 
                         # NEW: Check for authentication errors
+                        # Check for authentication errors
                         if any(
                             keyword in error_msg
                             for keyword in [
@@ -642,11 +823,15 @@ async def scrape_tweets(
                         ):
                             if progress_callback:
                                 progress_callback("🔑 Authentication error detected")
-                            raise CookieExpiredError(
-                                "Session expired during scraping. Please update cookies."
-                            )
+                            if cookie_expired_callback:
+                                cookie_expired_callback(
+                                    "Session expired during pagination"
+                                )
+                            # Retry this page after cookies updated
+                            pagination_retry += 1
+                            continue
 
-                        # NEW: Check for network errors
+                        # Check for network errors
                         if any(
                             keyword in error_msg
                             for keyword in [
@@ -654,23 +839,26 @@ async def scrape_tweets(
                                 "timeout",
                                 "network",
                                 "unreachable",
+                                "getaddrinfo",  # ADD - Your specific error
+                                "11001",  # ADD - Your error code
+                                "errno 11001",  # ADD - Full error
+                                "name resolution",  # ADD
+                                "connection reset",
+                                "connection refused",
+                                "temporary failure",
                             ]
                         ):
                             if pagination_retry < MAX_PAGINATION_RETRIES - 1:
-                                delay = RETRY_DELAYS[
-                                    min(pagination_retry, len(RETRY_DELAYS) - 1)
-                                ]
-                                if progress_callback:
-                                    progress_callback(
-                                        f"🔌 Network error. Retrying pagination in {delay}s... "
-                                        f"(Attempt {pagination_retry + 1}/{MAX_PAGINATION_RETRIES})"
+                                if network_error_callback:
+                                    network_error_callback(
+                                        f"Network error during pagination: {error_msg}"
                                     )
-                                await asyncio.sleep(delay)
+                                # Callback will pause and wait for reconnection
                                 pagination_retry += 1
                                 continue
                             else:
                                 raise NetworkError(
-                                    "Network connection failed during pagination"
+                                    "Network connection failed during pagination after retries"
                                 )
 
                         # 404 or other errors
@@ -847,6 +1035,7 @@ async def scrape_tweet_links_file(
     progress_callback=None,
     should_stop_callback=None,
     cookie_expired_callback=None,
+    network_error_callback=None,  # NEW
     break_settings: dict = None,
     resume_state: dict = None,
 ):
