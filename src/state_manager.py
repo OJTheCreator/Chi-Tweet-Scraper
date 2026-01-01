@@ -49,7 +49,7 @@ class StateManager:
         try:
             # Add metadata
             state_data["timestamp"] = datetime.now().isoformat()
-            state_data["version"] = "2.0"  # For future compatibility
+            state_data["version"] = "2.1"
 
             # Convert sets to lists for JSON serialization
             if "seen_tweet_ids" in state_data and isinstance(
@@ -359,7 +359,7 @@ class StateManager:
             logger.error(f"Failed to update progress: {e}")
             return False
 
-    def validate_state_integrity(self) -> tuple[bool, Optional[str]]:
+    def validate_state_integrity(self) -> tuple:
         """
         Validate that saved state is complete and consistent.
 
