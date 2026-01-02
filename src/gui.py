@@ -67,11 +67,17 @@ class TweetScraperApp:
         self.paused_for_network = False
         self.paused_for_error = False
         self.user_action = None
+        # FIX: Track cancellation explicitly instead of relying on task.done()
+        self._stop_requested = False
+        self._is_running = False
+        # FIX: Track current scrape state for better resume
+        self.current_scrape_state = {}
 
         root.columnconfigure(0, weight=1)
         root.rowconfigure(0, weight=1)
 
         self.task = None
+        self.loop = None
         self.current_task_type = None
         self.file_path = None
         self.links_file_path = None
@@ -82,6 +88,14 @@ class TweetScraperApp:
         self.setup_styles()
         self.create_ui()
         self.root.after(500, self.check_for_saved_state)
+
+    def _should_stop(self) -> bool:
+        """
+        FIX: Unambiguous stop check.
+        Only returns True if user explicitly requested stop.
+        Does NOT check task.done() which was ambiguous.
+        """
+        return self._stop_requested
 
     def setup_styles(self):
         style = ttk.Style()
@@ -703,9 +717,20 @@ class TweetScraperApp:
     # ========================================
     # ERROR RECOVERY DIALOG
     # ========================================
+    def _save_current_state_for_recovery(self, context):
+        """Save current state when error occurs so progress isn't lost."""
+        try:
+            state = self.current_scrape_state.copy()
+            state.update(context)
+            self.state_manager.save_state(state)
+            self.log("💾 State saved for recovery")
+        except Exception as e:
+            self.log(f"⚠️ Could not save recovery state: {e}")
+
     def _show_error_recovery_dialog(self, error_type, error_msg, context=None):
         context = context or {}
         tweets_so_far = context.get("tweets_scraped", "Unknown")
+        self._save_current_state_for_recovery(context)
         self.user_action = None
         dialog_closed = threading.Event()
 
@@ -1084,7 +1109,12 @@ class TweetScraperApp:
             return None
 
     def save_scrape_state(self, mode, **kwargs):
-        self.state_manager.save_state({"mode": mode, **kwargs})
+        """
+        FIX: Save complete state including seen_tweet_ids and output_path.
+        """
+        state = {"mode": mode, **kwargs}
+        self.current_scrape_state = state
+        self.state_manager.save_state(state)
 
     def check_for_saved_state(self):
         if self.state_manager.has_saved_state():
@@ -1145,6 +1175,8 @@ class TweetScraperApp:
             target = ("single", user, kws)
 
         self.current_task_type = "main"
+        self._stop_requested = False
+        self._is_running = True
         self.scrape_button.config(state="disabled")
         self.stop_btn.config(state="normal")
         self.progress.grid()
@@ -1185,16 +1217,23 @@ class TweetScraperApp:
                 async def batch():
                     total = 0
                     users = target[1]
+                    all_seen_ids = set()  # ADD THIS LINE
+
                     for i, u in enumerate(users):
-                        if self.task and self.task.done():
+                        if (
+                            self._should_stop()
+                        ):  # FIX: Use _should_stop() not task.done()
                             break
                         progress_cb(f"User {i+1}/{len(users)}: @{u}")
+
+                        # Save state BEFORE scraping (without output_path yet)
                         self.save_scrape_state(
                             "batch",
                             usernames=users,
                             current_index=i,
                             current_username=u,
                             tweets_scraped=total,
+                            seen_tweet_ids=list(all_seen_ids),
                             settings={
                                 "start_date": start,
                                 "end_date": end,
@@ -1202,31 +1241,53 @@ class TweetScraperApp:
                                 "save_dir": save_dir,
                             },
                         )
+
                         retry = 0
                         while retry < 5:
                             try:
-                                _, cnt, _ = await scrape_tweets(
+                                out, cnt, seen_ids = await scrape_tweets(
                                     username=u,
                                     start_date=start,
                                     end_date=end,
                                     export_format=fmt,
                                     progress_callback=progress_cb,
-                                    should_stop_callback=lambda: (
-                                        self.task.done() if self.task else False
-                                    ),
+                                    should_stop_callback=self._should_stop,
                                     cookie_expired_callback=cookie_cb,
                                     network_error_callback=network_cb,
                                     save_dir=save_dir,
                                     break_settings=break_settings,
                                 )
                                 total += cnt
+                                all_seen_ids.update(seen_ids)  # Add the returned IDs
+
+                                # Save state AFTER scraping (now with output_path)
+                                self.save_scrape_state(
+                                    "batch",
+                                    usernames=users,
+                                    current_index=i
+                                    + 1,  # Increment because this user is done
+                                    current_username=u,
+                                    tweets_scraped=total,
+                                    seen_tweet_ids=list(all_seen_ids),
+                                    output_path=out,
+                                    settings={
+                                        "start_date": start,
+                                        "end_date": end,
+                                        "export_format": fmt,
+                                        "save_dir": save_dir,
+                                    },
+                                )
+
                                 progress_cb(f"✓ {cnt} tweets for @{u}")
                                 break
                             except CookieExpiredError:
                                 action = self._wait_for_user_action(
                                     "cookie",
                                     "Cookies expired",
-                                    {"tweets_scraped": total},
+                                    {
+                                        "tweets_scraped": total,
+                                        "seen_tweet_ids": list(all_seen_ids),
+                                    },
                                 )
                                 if action == "stop":
                                     return total
@@ -1256,10 +1317,14 @@ class TweetScraperApp:
                 _, user, kws = target
 
                 async def single():
+                    # FIX: Save complete state
                     self.save_scrape_state(
                         "single",
                         current_username=user,
                         keywords=kws,
+                        tweets_scraped=0,  # Will be updated
+                        seen_tweet_ids=[],  # Will be updated
+                        output_path=None,  # Will be updated
                         settings={
                             "start_date": start,
                             "end_date": end,
@@ -1279,9 +1344,7 @@ class TweetScraperApp:
                                 use_and=self.op_var.get() == "AND",
                                 export_format=fmt,
                                 progress_callback=progress_cb,
-                                should_stop_callback=lambda: (
-                                    self.task.done() if self.task else False
-                                ),
+                                should_stop_callback=self._should_stop,
                                 cookie_expired_callback=cookie_cb,
                                 network_error_callback=network_cb,
                                 save_dir=save_dir,
@@ -1320,12 +1383,7 @@ class TweetScraperApp:
         except Exception as e:
             self.log(f"Error: {e}")
         finally:
-            self.progress.stop()
-            self.progress.grid_remove()
-            self.scrape_button.config(state="normal")
-            self.stop_btn.config(state="disabled")
-            self.count_lbl.config(text="Ready", fg=Colors.TEXT_SECONDARY)
-            self.task = None
+            self._cleanup_after_scrape()
 
     def _run_links(self, path, fmt, save_dir, break_settings):
         def progress_cb(msg):
@@ -1353,9 +1411,7 @@ class TweetScraperApp:
                             export_format=fmt,
                             save_dir=save_dir,
                             progress_callback=progress_cb,
-                            should_stop_callback=lambda: (
-                                self.task.done() if self.task else False
-                            ),
+                            should_stop_callback=self._should_stop,
                             break_settings=break_settings,
                         )
                         self.state_manager.clear_state()
@@ -1389,13 +1445,10 @@ class TweetScraperApp:
         except Exception as e:
             self.links_log(f"Error: {e}")
         finally:
-            self.progress.stop()
-            self.progress.grid_remove()
-            self.links_scrape_btn.config(state="normal")
-            self.task = None
+            self._cleanup_after_scrape()
 
     def start_scrape_thread(self):
-        if self.task:
+        if self._is_running:
             messagebox.showwarning("Busy", "Already running.")
             return
 
@@ -1469,6 +1522,8 @@ class TweetScraperApp:
         self.count_lbl.config(text="Starting...", fg=Colors.PRIMARY)
         self.clear_logs()
         self.log("Starting scrape...")
+        self._stop_requested = False
+        self._is_running = True
 
         threading.Thread(
             target=self._run_scrape,
@@ -1477,7 +1532,7 @@ class TweetScraperApp:
         ).start()
 
     def start_links_thread(self):
-        if self.task:
+        if self._is_running:
             messagebox.showwarning("Busy", "Already running.")
             return
 
@@ -1494,6 +1549,8 @@ class TweetScraperApp:
         self.progress.grid()
         self.progress.start(30)
         self.links_log("Starting link scrape...")
+        self._stop_requested = False
+        self._is_running = True
 
         threading.Thread(
             target=self._run_links,
@@ -1502,9 +1559,27 @@ class TweetScraperApp:
         ).start()
 
     def stop_scrape(self):
+        """FIX: Use explicit stop flag instead of just task.cancel()."""
+        self._stop_requested = True
+        self.log("🛑 Stop requested... (will stop after current operation)")
+
+        # Also cancel the task if it exists
         if self.task and not self.task.done():
             self.task.cancel()
-            self.log("Stopping...")
+
+    def _cleanup_after_scrape(self):
+        """Common cleanup after any scrape operation."""
+        self.progress.stop()
+        self.progress.grid_remove()
+        self.scrape_button.config(state="normal")
+        self.stop_btn.config(state="disabled")
+        self.links_scrape_btn.config(state="normal")
+        self.count_lbl.config(text="Ready", fg=Colors.TEXT_SECONDARY)
+        self.task = None
+        self.loop = None
+        self._stop_requested = False
+        self._is_running = False
+        self.current_scrape_state = {}
 
     def show_guide(self):
         guide = tk.Toplevel(self.root)
