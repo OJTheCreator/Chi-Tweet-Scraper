@@ -179,12 +179,7 @@ For large scrapes (500+ tweets):
 Create a portable executable:
 
 ```bash
-python -m PyInstaller --onefile --noconsole \
-    --name "ChiTweetScraper" \
-    --icon="assets/logo.ico" \
-    --add-data "assets/logo.png;assets" \
-    --add-data "assets/logo.ico;assets" \
-    GUI.py
+python -m PyInstaller --onefile --noconsole --name "ChiTweetScraper" --icon="assets/logo.ico" --add-data "assets/logo.png;assets" --add-data "assets/logo.ico;assets" --add-data "cookies;cookies" --add-data "data;data" --add-data "src/scraper.py;src" --add-data "src/state_manager.py;src" --add-data "src/create_cookie.py;src" --hidden-import=PIL --hidden-import=openpyxl --hidden-import=pandas --hidden-import=twikit --hidden-import=aiohttp src/gui.py
 ```
 
 ---
