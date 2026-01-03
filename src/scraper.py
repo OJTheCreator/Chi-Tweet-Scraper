@@ -1,17 +1,9 @@
 """
-Twitter Scraper - COMPLETE FIX VERSION
-======================================
-Addresses all 12 identified issues that cause premature stopping.
-
-Key improvements:
-1. Proper empty page handling with cursor refresh trigger
-2. Robust date parsing that never fails silently
-3. Explicit None check for page.next()
-4. Re-authentication support for cursor refresh
-5. Uses all defined constants
-6. Stop reason tracking throughout
-7. Multiple cursor refresh strategies
-8. Better error classification
+Twitter Scraper - Clean Working Version
+========================================
+Based on the original working code with minimal fixes for:
+1. Stopping properly when date range is complete
+2. Better error handling
 """
 
 import os
@@ -19,7 +11,7 @@ import json
 import asyncio
 import csv
 import random
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from twikit import Client, TooManyRequests
 from openpyxl import Workbook, load_workbook
 import logging
@@ -33,24 +25,17 @@ TWEET_ID_PATTERN = re.compile(
 )
 
 # ========================================
-# ROBUST CONFIGURATION FOR LONG SCRAPES
-# All constants are now ACTUALLY USED
+# CONFIGURATION
 # ========================================
 RATE_LIMIT_DELAY = 3
 MAX_NETWORK_RETRIES = 10
 RETRY_DELAYS = [10, 30, 60, 120, 300, 600, 900]
-MAX_PAGINATION_RETRIES = 15
-MAX_CONSECUTIVE_EMPTY_PAGES = 200  # NOW USED - max empties before giving up entirely
-EMPTY_PAGES_BEFORE_REFRESH = (
-    25  # Trigger cursor refresh after this many consecutive empties
-)
+MAX_PAGINATION_RETRIES = 10
+MAX_CONSECUTIVE_EMPTY_PAGES = 150
 EMPTY_PAGE_PROMPT_THRESHOLD = 25
-MAX_CURSOR_REFRESHES = 20  # Increased - more attempts to complete range
-MAX_CONSECUTIVE_ERRORS = 25
+MAX_CURSOR_REFRESHES = 10
+MAX_CONSECUTIVE_ERRORS = 20
 AUTO_SAVE_INTERVAL = 25
-
-# NEW: Delays between cursor refresh attempts
-CURSOR_REFRESH_DELAYS = [5, 15, 30, 60, 120]
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 COOKIES_FILE = os.path.join(BASE_DIR, "cookies", "twikit_cookies.json")
@@ -97,24 +82,6 @@ class CookieConflictError(TwitterScraperError):
     pass
 
 
-class DateRangeIncompleteError(TwitterScraperError):
-    """Raised when scraper couldn't complete the requested date range."""
-
-    def __init__(
-        self,
-        message,
-        oldest_date=None,
-        target_date=None,
-        tweets_collected=0,
-        stop_reason=None,
-    ):
-        super().__init__(message)
-        self.oldest_date = oldest_date
-        self.target_date = target_date
-        self.tweets_collected = tweets_collected
-        self.stop_reason = stop_reason
-
-
 # ========================================
 # ERROR CLASSIFICATION FUNCTIONS
 # ========================================
@@ -158,7 +125,6 @@ def is_network_error(error_msg: str) -> bool:
         "no route to host",
         "network is down",
         "temporarily unavailable",
-        "clientconnectorerror",
     ]
     return any(k in error_lower for k in keywords)
 
@@ -179,7 +145,6 @@ def is_auth_error(error_msg: str) -> bool:
         "invalid cookie",
         "cookie expired",
         "not authenticated",
-        "bad authentication",
     ]
     return any(k in error_lower for k in keywords)
 
@@ -194,7 +159,6 @@ def is_rate_limit_error(error_msg: str) -> bool:
         "try again later",
         "exceeded",
         "throttle",
-        "rate_limit",
     ]
     return any(k in error_lower for k in keywords)
 
@@ -212,23 +176,6 @@ def is_twitter_api_error(error_msg: str) -> bool:
         "service unavailable",
         "bad gateway",
         "over capacity",
-        "overloaded",
-    ]
-    return any(k in error_lower for k in keywords)
-
-
-def is_empty_response_error(error_msg: str) -> bool:
-    """Check if error indicates empty/null response from API."""
-    error_lower = error_msg.lower()
-    keywords = [
-        "none",
-        "null",
-        "empty",
-        "no data",
-        "nonetype",
-        "'nonetype'",
-        "has no attribute",
-        "cannot iterate",
     ]
     return any(k in error_lower for k in keywords)
 
@@ -285,71 +232,12 @@ async def smart_sleep(
             progress_callback(f"{message_prefix}Resuming in {minutes:02d}:{secs:02d}")
 
 
-def parse_tweet_date(created_at) -> datetime:
-    """
-    Parse tweet date with multiple format support.
-    NEVER returns None for valid input - falls back to reasonable defaults.
-    """
-    if not created_at:
-        logger.warning("Empty created_at received")
-        return None
-
-    try:
-        # Already a datetime
-        if isinstance(created_at, datetime):
-            return created_at
-
-        if isinstance(created_at, str):
-            # Try multiple formats
-            formats = [
-                "%a %b %d %H:%M:%S %z %Y",  # Twitter standard: "Wed Oct 10 20:19:24 +0000 2018"
-                "%Y-%m-%d %H:%M:%S",  # ISO-like without timezone
-                "%Y-%m-%dT%H:%M:%S.%fZ",  # ISO with microseconds
-                "%Y-%m-%dT%H:%M:%SZ",  # ISO without microseconds
-                "%Y-%m-%dT%H:%M:%S%z",  # ISO with timezone
-                "%Y-%m-%d",  # Just date
-                "%d/%m/%Y %H:%M:%S",  # European format
-                "%m/%d/%Y %H:%M:%S",  # US format
-            ]
-
-            for fmt in formats:
-                try:
-                    dt = datetime.strptime(created_at, fmt)
-                    # Remove timezone info for consistent comparison
-                    if dt.tzinfo is not None:
-                        dt = dt.replace(tzinfo=None)
-                    return dt
-                except ValueError:
-                    continue
-
-            # Last resort: try to extract date from string
-            import re
-
-            date_match = re.search(r"(\d{4})-(\d{2})-(\d{2})", created_at)
-            if date_match:
-                return datetime(
-                    int(date_match.group(1)),
-                    int(date_match.group(2)),
-                    int(date_match.group(3)),
-                )
-
-        logger.warning(
-            f"Could not parse tweet date: {created_at} (type: {type(created_at)})"
-        )
-        return None
-
-    except Exception as e:
-        logger.warning(f"Date parsing exception: {e} for value: {created_at}")
-        return None
-
-
 # ========================================
 # AUTHENTICATION
 # ========================================
 async def authenticate(retry_callback=None, should_stop_callback=None):
-    """Authenticate with automatic cookie deduplication and robust retry."""
+    """Authenticate with automatic cookie deduplication."""
 
-    # Clean cookies FIRST
     if os.path.exists(COOKIES_FILE):
         if clean_duplicate_cookies(COOKIES_FILE):
             if retry_callback:
@@ -361,7 +249,6 @@ async def authenticate(retry_callback=None, should_stop_callback=None):
 
         try:
             client = Client(language="en-US")
-
             if not os.path.exists(COOKIES_FILE):
                 raise CookieExpiredError(
                     "Cookie file not found. Please save cookies first."
@@ -372,7 +259,6 @@ async def authenticate(retry_callback=None, should_stop_callback=None):
             if should_stop_callback and should_stop_callback():
                 raise asyncio.CancelledError("Authentication stopped by user")
 
-            # Test authentication with a simple search
             await client.search_tweet("(from:twitter)", product="Latest")
             logger.info("Authentication successful")
             return client
@@ -438,8 +324,7 @@ async def handle_network_retry(
         if should_stop_callback and should_stop_callback():
             raise asyncio.CancelledError("Operation stopped by user")
         try:
-            result = await operation()
-            return result
+            return await operation()
         except asyncio.CancelledError:
             raise
         except CookieExpiredError:
@@ -551,17 +436,17 @@ def extract_tweet_data(tweet) -> dict:
         created_at = getattr(tweet, "created_at", "") or getattr(
             tweet, "created_at_datetime", ""
         )
-
-        # Use robust date parsing
-        dt = parse_tweet_date(created_at)
-        if dt:
-            formatted_date = dt.strftime("%Y-%m-%d %H:%M:%S")
-        else:
-            # Still save the tweet but mark the date issue
+        try:
+            if created_at:
+                if isinstance(created_at, str):
+                    dt = datetime.strptime(created_at, "%a %b %d %H:%M:%S %z %Y")
+                else:
+                    dt = created_at
+                formatted_date = dt.strftime("%Y-%m-%d %H:%M:%S")
+            else:
+                formatted_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        except:
             formatted_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            logger.warning(
-                f"Using current time as fallback for tweet date. Original: {created_at}"
-            )
 
         user = getattr(tweet, "user", None) or getattr(tweet, "author", None)
         username = ""
@@ -591,7 +476,6 @@ def extract_tweet_data(tweet) -> dict:
 
         data = {
             "date": formatted_date,
-            "parsed_date": dt,  # Keep the datetime object for comparison
             "username": username,
             "display_name": display_name,
             "text": text,
@@ -623,7 +507,9 @@ def sanitize_worksheet_name(name: str) -> str:
 
     name = normalize("NFKD", name)
     emoji_pattern = re.compile(
-        "[\U0001f600-\U0001f64f\U0001f300-\U0001f5ff\U0001f680-\U0001f6ff\U0001f1e0-\U0001f1ff\U00002702-\U000027b0\U000024c2-\U0001f251\U0001f900-\U0001f9ff\U0001fa70-\U0001faff]+",
+        "[\U0001f600-\U0001f64f\U0001f300-\U0001f5ff\U0001f680-\U0001f6ff"
+        "\U0001f1e0-\U0001f1ff\U00002702-\U000027b0\U000024c2-\U0001f251"
+        "\U0001f900-\U0001f9ff\U0001fa70-\U0001faff]+",
         flags=re.UNICODE,
     )
     name = emoji_pattern.sub("", name)
@@ -682,117 +568,6 @@ async def take_custom_break(
 
 
 # ========================================
-# CURSOR REFRESH - NOW A ROBUST SYSTEM
-# ========================================
-async def perform_cursor_refresh(
-    client,
-    username,
-    keywords,
-    start_date,
-    oldest_tweet_date,
-    use_and,
-    progress_callback,
-    cursor_refresh_count,
-    should_stop_callback=None,
-):
-    """
-    Perform a cursor refresh with multiple retry strategies.
-    Returns (new_page, new_cursor_count, success).
-    """
-    if cursor_refresh_count >= MAX_CURSOR_REFRESHES:
-        if progress_callback:
-            progress_callback(
-                f"⚠️ Exhausted all {MAX_CURSOR_REFRESHES} cursor refresh attempts"
-            )
-        return None, cursor_refresh_count, False
-
-    # Calculate the new search range
-    refresh_until = oldest_tweet_date.strftime("%Y-%m-%d")
-
-    # Strategy 1: Search from start_date to oldest_tweet_date
-    strategies = [
-        ("standard", start_date, refresh_until),
-    ]
-
-    # Strategy 2: If that fails, try day before oldest_tweet
-    day_before = (oldest_tweet_date - timedelta(days=1)).strftime("%Y-%m-%d")
-    strategies.append(("day_before", start_date, day_before))
-
-    # Strategy 3: Try a week chunk
-    week_before = (oldest_tweet_date - timedelta(days=7)).strftime("%Y-%m-%d")
-    strategies.append(("week_chunk", start_date, week_before))
-
-    for strategy_name, s_date, e_date in strategies:
-        if should_stop_callback and should_stop_callback():
-            return None, cursor_refresh_count, False
-
-        try:
-            delay = CURSOR_REFRESH_DELAYS[
-                min(cursor_refresh_count, len(CURSOR_REFRESH_DELAYS) - 1)
-            ]
-
-            if progress_callback:
-                progress_callback(
-                    f"🔄 Cursor refresh #{cursor_refresh_count + 1} ({strategy_name}): {s_date.split('_')[0] if s_date else 'N/A'} to {e_date}"
-                )
-
-            await asyncio.sleep(delay)
-
-            refresh_query = build_search_query(
-                username, keywords, s_date, e_date, use_and
-            )
-
-            page = await client.search_tweet(refresh_query, product="Latest")
-
-            # Verify we got something
-            if page is not None:
-                # Try to peek at the content
-                try:
-                    page_list = list(page)
-                    if len(page_list) > 0:
-                        if progress_callback:
-                            progress_callback(
-                                f"✅ Cursor refresh successful! Found {len(page_list)} tweets in first page"
-                            )
-                        return page, cursor_refresh_count + 1, True
-                    else:
-                        if progress_callback:
-                            progress_callback(
-                                f"📭 Refresh returned empty page, trying next strategy..."
-                            )
-                        continue
-                except Exception as peek_error:
-                    # Can't peek, but page exists - return it anyway
-                    if progress_callback:
-                        progress_callback(
-                            f"✅ Cursor refresh returned a page (can't peek)"
-                        )
-                    return page, cursor_refresh_count + 1, True
-
-        except TooManyRequests:
-            if progress_callback:
-                progress_callback("⏳ Rate limit during refresh. Waiting 15 min...")
-            await smart_sleep(900, should_stop_callback, progress_callback, "⏳ ")
-            # Don't count this as a refresh attempt
-            continue
-
-        except Exception as e:
-            error_msg = str(e)
-            if progress_callback:
-                progress_callback(
-                    f"⚠️ Refresh strategy '{strategy_name}' failed: {error_msg[:50]}"
-                )
-
-            if is_auth_error(error_msg):
-                raise CookieExpiredError("Session expired during refresh")
-
-            continue
-
-    # All strategies failed
-    return None, cursor_refresh_count + 1, False
-
-
-# ========================================
 # MAIN SCRAPING FUNCTION
 # ========================================
 async def scrape_tweets(
@@ -813,33 +588,21 @@ async def scrape_tweets(
     resume_state=None,
 ):
     """
-    Scrape tweets with COMPREHENSIVE error handling and date range completion.
-
-    This version addresses ALL identified issues:
-    1. Proper empty page handling with cursor refresh trigger
-    2. Robust date parsing that never fails silently
-    3. Explicit None check for page.next()
-    4. Multiple cursor refresh strategies
-    5. Uses all defined constants
-    6. Complete stop reason tracking
-    7. Better error classification
+    Scrape tweets - Clean working version.
+    Based on original code that worked, with proper stop conditions.
     """
     csv_file = None
     wb = None
     ws = None
     writer = None
 
-    # ALWAYS track why we stopped
+    # Track why we stopped - ALWAYS log this at the end
     stop_reason = "Unknown"
-    date_range_complete = False
 
     try:
         # Clean cookies at start
         clean_duplicate_cookies(COOKIES_FILE)
 
-        # ========================================
-        # INITIALIZATION
-        # ========================================
         resuming = resume_state is not None
         if resuming:
             if progress_callback:
@@ -900,7 +663,6 @@ async def scrape_tweets(
         )
 
         if should_stop_callback and should_stop_callback():
-            stop_reason = "User cancelled before search started"
             return output_path, count, list(seen_tweet_ids)
 
         if progress_callback:
@@ -916,14 +678,9 @@ async def scrape_tweets(
             datetime.strptime(end_date.split("_")[0], "%Y-%m-%d") if end_date else None
         )
 
-        # Date tracking - CRITICAL for knowing when to stop
         oldest_tweet_date = None
         newest_tweet_date = None
         reached_start_date = False
-
-        # Tracking variables with proper initialization
-        dates_successfully_parsed = 0
-        dates_failed_to_parse = 0
 
         async def start_search():
             return await client.search_tweet(query, product="Latest")
@@ -935,45 +692,30 @@ async def scrape_tweets(
             should_stop_callback,
         )
 
-        # Counters
         empty_page_count = 0
-        consecutive_empty_pages = 0  # NEW: separate counter for consecutive empties
         cursor_refresh_count = 0
         consecutive_errors = 0
         total_pages = 0
         last_save = 0
-        cookie_cleaned_during_pagination = False
+        cookie_clean_attempts = 0  # Track cookie cleaning attempts
 
-        # ========================================
-        # MAIN SCRAPING LOOP
-        # ========================================
         try:
-            while page is not None:  # Explicit None check
+            while page:
                 if should_stop_callback and should_stop_callback():
-                    stop_reason = "User cancelled during scraping"
+                    stop_reason = "User cancelled"
                     break
 
                 total_pages += 1
                 page_tweets = 0
                 page_oldest_date = None
-                page_newest_date = None
 
-                # ========================================
-                # PROCESS CURRENT PAGE
-                # ========================================
-                try:
-                    # Convert page to list to check content
-                    page_list = list(page) if page else []
-                except Exception as e:
-                    logger.warning(f"Error converting page to list: {e}")
-                    page_list = []
-
-                for tweet in page_list:
+                # Process tweets from page
+                for tweet in page:
                     if should_stop_callback and should_stop_callback():
-                        stop_reason = "User cancelled during tweet processing"
+                        stop_reason = "User cancelled during processing"
                         break
                     if max_tweets and count >= max_tweets:
-                        stop_reason = f"Reached max_tweets limit ({max_tweets})"
+                        stop_reason = f"Reached max tweets limit ({max_tweets})"
                         break
 
                     tweet_data = extract_tweet_data(tweet)
@@ -988,10 +730,9 @@ async def scrape_tweets(
                     if not should_include_tweet(tweet_data, keywords, use_and):
                         continue
 
-                    # DATE TRACKING - use the pre-parsed date
-                    td = tweet_data.get("parsed_date")
-                    if td:
-                        dates_successfully_parsed += 1
+                    # Track dates
+                    try:
+                        td = datetime.strptime(tweet_data["date"], "%Y-%m-%d %H:%M:%S")
 
                         if oldest_tweet_date is None or td < oldest_tweet_date:
                             oldest_tweet_date = td
@@ -999,17 +740,14 @@ async def scrape_tweets(
                             newest_tweet_date = td
                         if page_oldest_date is None or td < page_oldest_date:
                             page_oldest_date = td
-                        if page_newest_date is None or td > page_newest_date:
-                            page_newest_date = td
 
-                        # Check if we've reached start date
+                        # Check if this tweet is AT or BEFORE start date
                         if start_dt and td.date() <= start_dt.date():
                             reached_start_date = True
-                    else:
-                        dates_failed_to_parse += 1
-                        logger.warning(f"Tweet {tid} has no parseable date")
+                    except:
+                        pass
 
-                    # Save tweet (without parsed_date field)
+                    # Save tweet
                     row = [
                         tweet_data["date"],
                         tweet_data["username"],
@@ -1033,16 +771,9 @@ async def scrape_tweets(
                     count += 1
                     page_tweets += 1
                     consecutive_errors = 0
-                    consecutive_empty_pages = 0  # Reset on successful tweet
 
                     if progress_callback:
-                        # Include date info in progress
-                        date_info = (
-                            f" | Oldest: {oldest_tweet_date.strftime('%Y-%m-%d')}"
-                            if oldest_tweet_date
-                            else ""
-                        )
-                        progress_callback(f"📊 {count} tweets{date_info}")
+                        progress_callback(count)
 
                     # Auto-save
                     if count - last_save >= save_every_n:
@@ -1058,95 +789,47 @@ async def scrape_tweets(
                         break_settings, count, progress_callback, should_stop_callback
                     )
 
-                # ========================================
-                # EMPTY PAGE HANDLING - KEY FIX
-                # ========================================
+                # Handle empty pages
                 if page_tweets == 0:
                     empty_page_count += 1
-                    consecutive_empty_pages += 1
 
-                    if progress_callback and consecutive_empty_pages % 5 == 0:
+                    if progress_callback and empty_page_count % 5 == 0:
                         progress_callback(
-                            f"📭 Empty page #{empty_page_count} "
-                            f"(consecutive: {consecutive_empty_pages}, total tweets: {count})"
+                            f"📭 Empty page {empty_page_count} ({count} tweets so far)"
                         )
 
-                    # Check if we should trigger cursor refresh due to empty pages
-                    if consecutive_empty_pages >= EMPTY_PAGES_BEFORE_REFRESH:
-                        if oldest_tweet_date and start_dt:
-                            days_remaining = (
-                                oldest_tweet_date.date() - start_dt.date()
-                            ).days
-
-                            if (
-                                days_remaining > 0
-                                and cursor_refresh_count < MAX_CURSOR_REFRESHES
-                            ):
-                                if progress_callback:
-                                    progress_callback(
-                                        f"🔄 {consecutive_empty_pages} consecutive empty pages. "
-                                        f"~{days_remaining} days remaining. Triggering cursor refresh..."
-                                    )
-
-                                new_page, cursor_refresh_count, success = (
-                                    await perform_cursor_refresh(
-                                        client,
-                                        username,
-                                        keywords,
-                                        start_date,
-                                        oldest_tweet_date,
-                                        use_and,
-                                        progress_callback,
-                                        cursor_refresh_count,
-                                        should_stop_callback,
-                                    )
-                                )
-
-                                if success and new_page:
-                                    page = new_page
-                                    consecutive_empty_pages = 0
-                                    continue
-                                else:
-                                    if progress_callback:
-                                        progress_callback(
-                                            "⚠️ Cursor refresh didn't help, continuing pagination..."
-                                        )
-
-                    # Give up if no tweets at all after many attempts
-                    if count == 0 and empty_page_count >= 50:
-                        stop_reason = "No tweets found after 50 empty pages"
-                        if progress_callback:
-                            progress_callback(f"❌ {stop_reason}")
-                        break
-
-                    # Give up if too many consecutive empties (using the constant!)
-                    if consecutive_empty_pages >= MAX_CONSECUTIVE_EMPTY_PAGES:
-                        stop_reason = f"Too many consecutive empty pages ({consecutive_empty_pages})"
-                        if progress_callback:
-                            progress_callback(f"⚠️ {stop_reason}")
-                        break
-                else:
-                    consecutive_empty_pages = 0
-
-                # Check if we've reached start date based on page content
-                if page_oldest_date and start_dt:
-                    if page_oldest_date.date() < start_dt.date():
-                        reached_start_date = True
-                        date_range_complete = True
-                        stop_reason = f"Successfully reached start date (oldest tweet: {page_oldest_date.strftime('%Y-%m-%d')})"
+                    # FIX: If we've reached start date, stop after some empty pages
+                    if reached_start_date and empty_page_count >= 10:
+                        stop_reason = f"Date range complete (reached start date + {empty_page_count} empty pages)"
                         if progress_callback:
                             progress_callback(
-                                f"✅ {stop_reason}. {count} tweets collected."
+                                f"✅ Date range complete! {count} tweets collected."
                             )
                         break
 
-                # Check max tweets
-                if max_tweets and count >= max_tweets:
-                    stop_reason = f"Reached max_tweets limit ({max_tweets})"
-                    break
+                    # Only stop if we have NO tweets at all after many attempts
+                    if count == 0 and empty_page_count >= 20:
+                        stop_reason = "No tweets found after 20 empty pages"
+                        if progress_callback:
+                            progress_callback("❌ No tweets found matching criteria")
+                        break
+                else:
+                    empty_page_count = 0
+
+                # Check if we've passed start date
+                if page_oldest_date and start_dt:
+                    if page_oldest_date.date() < start_dt.date():
+                        stop_reason = f"Successfully reached start date (oldest: {page_oldest_date.strftime('%Y-%m-%d')})"
+                        if progress_callback:
+                            progress_callback(
+                                f"✅ Reached tweets before start date ({page_oldest_date.strftime('%Y-%m-%d')}). "
+                                f"{count} tweets collected."
+                            )
+                        reached_start_date = True
+                        break
 
                 # ========================================
-                # PAGINATION - THE CRITICAL SECTION
+                # PAGINATION
                 # ========================================
                 pag_success = False
                 pag_attempt = 0
@@ -1156,36 +839,17 @@ async def scrape_tweets(
                         if should_stop_callback and should_stop_callback():
                             raise asyncio.CancelledError()
 
-                        if progress_callback and pag_attempt == 0:
+                        if progress_callback:
                             progress_callback(
                                 f"📄 Loading next page... ({count} tweets)"
                             )
 
-                        # THE KEY FIX: Check for None explicitly
-                        if page is None:
-                            stop_reason = "Page became None unexpectedly"
-                            raise StopAsyncIteration()
-
-                        next_page = await page.next()
-
-                        # ANOTHER KEY FIX: next() might return None
-                        if next_page is None:
-                            if progress_callback:
-                                progress_callback("📋 page.next() returned None")
-                            raise StopAsyncIteration()
-
-                        page = next_page
+                        page = await page.next()
                         pag_success = True
                         consecutive_errors = 0
 
                     except StopAsyncIteration:
-                        # End of pagination stream
-                        if progress_callback:
-                            progress_callback(
-                                f"📋 Pagination stream ended ({count} tweets collected)"
-                            )
-
-                        # Attempt cursor refresh if we haven't reached start date
+                        # End of pagination - attempt cursor refresh if needed
                         if not reached_start_date and start_dt and oldest_tweet_date:
                             days_left = (
                                 oldest_tweet_date.date() - start_dt.date()
@@ -1198,61 +862,55 @@ async def scrape_tweets(
                                 if progress_callback:
                                     progress_callback(
                                         f"⚠️ ~{days_left} days remaining. "
-                                        f"Attempting cursor refresh {cursor_refresh_count + 1}/{MAX_CURSOR_REFRESHES}..."
+                                        f"Refreshing cursor ({cursor_refresh_count + 1}/{MAX_CURSOR_REFRESHES})..."
                                     )
 
-                                new_page, cursor_refresh_count, success = (
-                                    await perform_cursor_refresh(
-                                        client,
+                                try:
+                                    await asyncio.sleep(5)
+                                    refresh_until = oldest_tweet_date.strftime(
+                                        "%Y-%m-%d"
+                                    )
+                                    refresh_query = build_search_query(
                                         username,
                                         keywords,
                                         start_date,
-                                        oldest_tweet_date,
+                                        refresh_until,
                                         use_and,
-                                        progress_callback,
-                                        cursor_refresh_count,
-                                        should_stop_callback,
                                     )
-                                )
 
-                                if success and new_page:
-                                    page = new_page
-                                    consecutive_empty_pages = 0
-                                    pag_success = True
                                     if progress_callback:
                                         progress_callback(
-                                            "✅ Cursor refresh successful, continuing..."
+                                            f"🔄 New search: {start_date.split('_')[0] if start_date else 'N/A'} to {refresh_until}"
                                         )
-                                    continue
-                                else:
-                                    # Keep trying cursor refresh with delays
-                                    if cursor_refresh_count < MAX_CURSOR_REFRESHES:
-                                        delay = CURSOR_REFRESH_DELAYS[
-                                            min(
-                                                cursor_refresh_count,
-                                                len(CURSOR_REFRESH_DELAYS) - 1,
-                                            )
-                                        ]
-                                        if progress_callback:
-                                            progress_callback(
-                                                f"⏳ Waiting {delay}s before next refresh attempt..."
-                                            )
-                                        await asyncio.sleep(delay)
-                                        continue
 
-                            # Exhausted refresh attempts
-                            stop_reason = f"Exhausted {cursor_refresh_count} cursor refreshes with ~{days_left} days remaining"
-                            if progress_callback:
-                                progress_callback(f"⚠️ {stop_reason}")
+                                    page = await client.search_tweet(
+                                        refresh_query, product="Latest"
+                                    )
+                                    cursor_refresh_count += 1
+                                    empty_page_count = 0
+                                    pag_success = True
+
+                                    if progress_callback:
+                                        progress_callback("✅ Cursor refreshed!")
+                                    continue
+                                except Exception as re:
+                                    if progress_callback:
+                                        progress_callback(
+                                            f"⚠️ Refresh failed: {str(re)[:50]}"
+                                        )
+
+                            # Failed to get more data
+                            stop_reason = f"End of pagination with ~{days_left} days remaining (tried {cursor_refresh_count} refreshes)"
                         else:
                             if reached_start_date:
                                 stop_reason = "Successfully completed date range"
-                                date_range_complete = True
-                            elif not oldest_tweet_date:
-                                stop_reason = "End of pagination (no date tracking - possible date parsing issue)"
                             else:
-                                stop_reason = "End of pagination"
+                                stop_reason = "End of available results"
 
+                        if progress_callback:
+                            progress_callback(
+                                f"📋 End of available results. {count} tweets collected."
+                            )
                         page = None
                         break
 
@@ -1266,7 +924,6 @@ async def scrape_tweets(
                         continue
 
                     except asyncio.CancelledError:
-                        stop_reason = "User cancelled"
                         raise
 
                     except Exception as e:
@@ -1274,48 +931,58 @@ async def scrape_tweets(
                         consecutive_errors += 1
                         pag_attempt += 1
 
-                        logger.warning(
-                            f"Pagination error (attempt {pag_attempt}): {em}"
-                        )
+                        if is_cookie_conflict_error(em):
+                            cookie_clean_attempts += 1
 
-                        # Cookie conflict
-                        if (
-                            is_cookie_conflict_error(em)
-                            and not cookie_cleaned_during_pagination
-                        ):
+                            if cookie_clean_attempts <= 3:
+                                if progress_callback:
+                                    progress_callback(
+                                        f"🧹 Fixing duplicate cookie issue (attempt {cookie_clean_attempts}/3)..."
+                                    )
+                                clean_duplicate_cookies(COOKIES_FILE)
+                                # Try to reload cookies in the client
+                                try:
+                                    client.load_cookies(COOKIES_FILE)
+                                    pag_attempt = 0
+                                    continue
+                                except:
+                                    pass
+
+                            # After 3 attempts, prompt for new cookies
                             if progress_callback:
-                                progress_callback("🧹 Fixing duplicate cookie issue...")
-                            clean_duplicate_cookies(COOKIES_FILE)
-                            cookie_cleaned_during_pagination = True
-                            pag_attempt = 0
-                            continue
+                                progress_callback(
+                                    "🔑 Cookie issue persists. Please provide new cookies."
+                                )
+                            if cookie_expired_callback:
+                                cookie_expired_callback(
+                                    f"Cookie error after {cookie_clean_attempts} cleaning attempts: {em}"
+                                )
+                            raise CookieExpiredError(f"Cookie error persists: {em}")
 
-                        # Auth error
                         if is_auth_error(em):
                             if cookie_expired_callback:
                                 cookie_expired_callback("Session expired")
                             raise CookieExpiredError("Session expired")
 
-                        # Rate limit
                         if is_rate_limit_error(em):
                             if progress_callback:
-                                progress_callback("⏳ Rate limit detected...")
+                                progress_callback("⏳ Rate limit...")
                             await smart_sleep(
                                 900, should_stop_callback, progress_callback, "⏳ "
                             )
                             pag_attempt = 0
                             continue
 
-                        # Empty/None response - treat as end of stream
-                        if is_empty_response_error(em):
-                            if progress_callback:
-                                progress_callback(
-                                    f"📋 Empty response detected: {em[:50]}"
-                                )
-                            raise StopAsyncIteration()
-
-                        # Network/API errors
                         if is_network_error(em) or is_twitter_api_error(em):
+                            if pag_attempt >= MAX_PAGINATION_RETRIES:
+                                # Exhausted retries - raise exception to trigger GUI dialog
+                                stop_reason = f"Network error after {pag_attempt} retries: {em[:50]}"
+                                if network_error_callback:
+                                    network_error_callback(em)
+                                raise NetworkError(
+                                    f"Network error persists after {pag_attempt} retries: {em}"
+                                )
+
                             delay = RETRY_DELAYS[
                                 min(pag_attempt - 1, len(RETRY_DELAYS) - 1)
                             ]
@@ -1323,24 +990,20 @@ async def scrape_tweets(
                                 progress_callback(
                                     f"🔌 Error. Waiting {delay}s... ({pag_attempt}/{MAX_PAGINATION_RETRIES})"
                                 )
-                            if network_error_callback and pag_attempt >= 3:
-                                network_error_callback(em)
                             await smart_sleep(delay, should_stop_callback)
                             continue
 
-                        # Too many consecutive errors
                         if consecutive_errors >= MAX_CONSECUTIVE_ERRORS:
                             stop_reason = f"Too many consecutive errors ({consecutive_errors}): {em[:50]}"
-                            if progress_callback:
-                                progress_callback(f"❌ {stop_reason}")
-                            page = None
-                            break
+                            # Raise exception to trigger GUI dialog
+                            raise NetworkError(
+                                f"Too many errors ({consecutive_errors}): {em}"
+                            )
 
-                        # Generic retry
                         delay = min(30 * pag_attempt, 300)
                         if progress_callback:
                             progress_callback(
-                                f"⚠️ Error: {em[:60]}. Retrying in {delay}s..."
+                                f"⚠️ Error: {str(e)[:60]}. Retrying in {delay}s..."
                             )
                         await smart_sleep(delay, should_stop_callback)
                         continue
@@ -1354,58 +1017,42 @@ async def scrape_tweets(
                 progress_callback("🛑 Cancelled")
             raise
         finally:
-            # Always save on exit
             if export_format.lower() == "csv" and csv_file:
                 csv_file.close()
                 csv_file = None
             elif wb:
                 wb.save(output_path)
 
-        # ========================================
-        # FINAL REPORTING
-        # ========================================
-        if progress_callback:
-            progress_callback(f"📊 Final verification...")
-            progress_callback(
-                f"   - Dates parsed successfully: {dates_successfully_parsed}"
-            )
-            progress_callback(f"   - Dates failed to parse: {dates_failed_to_parse}")
-
-        days_missing = 0
+        # Final verification
         if start_dt and oldest_tweet_date:
             if oldest_tweet_date.date() > start_dt.date():
-                days_missing = (oldest_tweet_date.date() - start_dt.date()).days
+                days_miss = (oldest_tweet_date.date() - start_dt.date()).days
+                if stop_reason == "Unknown":
+                    stop_reason = f"Incomplete - missing ~{days_miss} days"
                 if progress_callback:
                     progress_callback(
-                        f"⚠️ DATE RANGE INCOMPLETE: Missing ~{days_missing} days. "
-                        f"Oldest: {oldest_tweet_date.strftime('%Y-%m-%d')}, "
-                        f"Target: {start_dt.strftime('%Y-%m-%d')}"
+                        f"⚠️ Could not reach full date range. Missing ~{days_miss} days. "
+                        f"Oldest tweet: {oldest_tweet_date.strftime('%Y-%m-%d')}"
                     )
             else:
-                date_range_complete = True
+                if stop_reason == "Unknown":
+                    stop_reason = "Successfully completed date range"
                 if progress_callback:
-                    oldest_str = oldest_tweet_date.strftime("%Y-%m-%d")
-                    newest_str = (
-                        newest_tweet_date.strftime("%Y-%m-%d")
-                        if newest_tweet_date
-                        else "N/A"
-                    )
                     progress_callback(
-                        f"✅ Date range complete: {oldest_str} to {newest_str}"
+                        f"✅ Date range fully covered: {oldest_tweet_date.strftime('%Y-%m-%d')} to "
+                        f"{newest_tweet_date.strftime('%Y-%m-%d') if newest_tweet_date else 'N/A'}"
                     )
 
-        # Always log stop reason
+        # Always log the stop reason
         if progress_callback:
             progress_callback(f"📝 Stop reason: {stop_reason}")
-            progress_callback(
-                f"✅ Complete: {count} tweets ({total_pages} pages, {cursor_refresh_count} cursor refreshes)"
-            )
+            progress_callback(f"✅ Complete: {count} tweets ({total_pages} pages)")
 
         return output_path, count, list(seen_tweet_ids)
 
     except CookieExpiredError:
         if progress_callback:
-            progress_callback("🔑 Cookie expired - please update cookies")
+            progress_callback("🔑 Cookie expired")
         raise
     except NetworkError:
         if progress_callback:
@@ -1703,7 +1350,7 @@ async def scrape_multiple_usernames(
                 }
             )
             if progress_callback:
-                progress_callback(f"❌ @{clean} failed: {str(e)[:50]}")
+                progress_callback(f"❌ @{clean} failed")
     if progress_callback:
         ok = len([r for r in results if r["status"] == "success"])
         progress_callback(f"🎉 Batch: {ok}/{len(usernames)} users, {total} tweets")

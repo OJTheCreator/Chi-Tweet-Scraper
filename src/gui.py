@@ -48,7 +48,7 @@ class Colors:
 class TweetScraperApp:
     def __init__(self, root):
         self.root = root
-        root.title("Chi Tweet Scraper v-1.1.0")
+        root.title("Chi Tweet Scraper 1.1.0")
         root.geometry("720x780")
         root.resizable(True, True)
         root.minsize(680, 720)
