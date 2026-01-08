@@ -48,7 +48,7 @@ class Colors:
 class TweetScraperApp:
     def __init__(self, root):
         self.root = root
-        root.title("Chi Tweet Scraper 1.1.0")
+        root.title("Chi Tweet Scraper 1.1.0   (Data Creator)")
         root.geometry("720x780")
         root.resizable(True, True)
         root.minsize(680, 720)
@@ -206,7 +206,7 @@ class TweetScraperApp:
         ).pack(anchor="w")
         tk.Label(
             title_frame,
-            text="Extract tweets reliably",
+            text="by OJTheCreator",
             font=("Segoe UI", 9),
             bg=Colors.BG,
             fg=Colors.TEXT_SECONDARY,
@@ -1334,6 +1334,7 @@ class TweetScraperApp:
                         },
                     )
                     retry = 0
+                    resume_state = None
                     while retry < 5:
                         try:
                             out, cnt, _ = await scrape_tweets(
@@ -1349,23 +1350,55 @@ class TweetScraperApp:
                                 network_error_callback=network_cb,
                                 save_dir=save_dir,
                                 break_settings=break_settings,
+                                resume_state=resume_state,
                             )
                             self.state_manager.clear_state()
                             return out, cnt
                         except CookieExpiredError:
+                            resume_state = self.state_manager.load_state()
                             action = self._wait_for_user_action(
-                                "cookie", "Cookies expired", {}
+                                "cookie",
+                                "Cookies expired",
+                                {
+                                    "tweets_scraped": (
+                                        resume_state.get("tweets_scraped", 0)
+                                        if resume_state
+                                        else 0
+                                    )
+                                },
                             )
                             if action == "stop":
                                 return None, 0
                             retry += 1
                         except NetworkError as e:
-                            action = self._wait_for_user_action("network", str(e), {})
+                            resume_state = self.state_manager.load_state()
+                            action = self._wait_for_user_action(
+                                "network",
+                                str(e),
+                                {
+                                    "tweets_scraped": (
+                                        resume_state.get("tweets_scraped", 0)
+                                        if resume_state
+                                        else 0
+                                    )
+                                },
+                            )
                             if action == "stop":
                                 return None, 0
                             retry += 1
                         except Exception as e:
-                            action = self._wait_for_user_action("unknown", str(e), {})
+                            resume_state = self.state_manager.load_state()
+                            action = self._wait_for_user_action(
+                                "unknown",
+                                str(e),
+                                {
+                                    "tweets_scraped": (
+                                        resume_state.get("tweets_scraped", 0)
+                                        if resume_state
+                                        else 0
+                                    )
+                                },
+                            )
                             if action == "stop":
                                 return None, 0
                             retry += 1
@@ -1404,6 +1437,7 @@ class TweetScraperApp:
 
             async def links_task():
                 retry = 0
+                resume_state = None
                 while retry < 5:
                     try:
                         out, cnt, failed, _ = await scrape_tweet_links_file(
@@ -1413,23 +1447,55 @@ class TweetScraperApp:
                             progress_callback=progress_cb,
                             should_stop_callback=self._should_stop,
                             break_settings=break_settings,
+                            resume_state=resume_state,
                         )
                         self.state_manager.clear_state()
                         return out, cnt, failed
                     except CookieExpiredError:
+                        resume_state = self.state_manager.load_state()
                         action = self._wait_for_user_action(
-                            "cookie", "Cookies expired", {}
+                            "cookie",
+                            "Cookies expired",
+                            {
+                                "tweets_scraped": (
+                                    resume_state.get("tweets_scraped", 0)
+                                    if resume_state
+                                    else 0
+                                )
+                            },
                         )
                         if action == "stop":
                             return None, 0, 0
                         retry += 1
                     except NetworkError as e:
-                        action = self._wait_for_user_action("network", str(e), {})
+                        resume_state = self.state_manager.load_state()
+                        action = self._wait_for_user_action(
+                            "network",
+                            str(e),
+                            {
+                                "tweets_scraped": (
+                                    resume_state.get("tweets_scraped", 0)
+                                    if resume_state
+                                    else 0
+                                )
+                            },
+                        )
                         if action == "stop":
                             return None, 0, 0
                         retry += 1
                     except Exception as e:
-                        action = self._wait_for_user_action("unknown", str(e), {})
+                        resume_state = self.state_manager.load_state()
+                        action = self._wait_for_user_action(
+                            "unknown",
+                            str(e),
+                            {
+                                "tweets_scraped": (
+                                    resume_state.get("tweets_scraped", 0)
+                                    if resume_state
+                                    else 0
+                                )
+                            },
+                        )
                         if action == "stop":
                             return None, 0, 0
                         retry += 1
