@@ -23,3 +23,7 @@ cookies/
 # System files
 .DS_Store
 Thumbs.db
+
+# API Keys - NEVER commit!
+config/api_keys.json
+!config/api_keys.example.json

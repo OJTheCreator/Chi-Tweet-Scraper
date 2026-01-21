@@ -1,0 +1,21 @@
+{
+  "tweetx": {
+    "api_key": "",
+    "enabled": false,
+    "extra": {}
+  },
+  "twitterapi_io": {
+    "api_key": "",
+    "enabled": false,
+    "extra": {}
+  },
+  "official_x": {
+    "api_key": "",
+    "enabled": false,
+    "extra": {
+      "api_secret": "",
+      "access_token": "",
+      "access_token_secret": ""
+    }
+  }
+}
