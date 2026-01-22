@@ -44,7 +44,6 @@ try:
         load_app_settings,
         save_app_settings,
     )
-
     FEATURES_AVAILABLE = True
 except ImportError:
     FEATURES_AVAILABLE = False
@@ -69,7 +68,6 @@ try:
         get_api_key,
         set_api_key,
     )
-
     API_MODULE_AVAILABLE = True
 except ImportError:
     API_MODULE_AVAILABLE = False
@@ -88,9 +86,8 @@ def resource_path(relative_path):
 # ========================================
 class Colors:
     """Color theme with dark mode support."""
-
     _dark_mode = False
-
+    
     # Light theme (default)
     PRIMARY = "#2563eb"
     PRIMARY_DARK = "#1d4ed8"
@@ -103,7 +100,7 @@ class Colors:
     SUCCESS = "#22c55e"
     ERROR = "#ef4444"
     WARNING = "#f59e0b"
-
+    
     @classmethod
     def set_dark_mode(cls, enabled: bool):
         cls._dark_mode = enabled
@@ -131,7 +128,7 @@ class Colors:
             cls.SUCCESS = "#22c55e"
             cls.ERROR = "#ef4444"
             cls.WARNING = "#f59e0b"
-
+    
     @classmethod
     def is_dark_mode(cls):
         return cls._dark_mode
@@ -140,15 +137,15 @@ class Colors:
 class TweetScraperApp:
     def __init__(self, root):
         self.root = root
-
+        
         # Load app settings (including dark mode)
         if FEATURES_AVAILABLE:
             self.app_settings = load_app_settings()
             Colors.set_dark_mode(self.app_settings.dark_mode)
         else:
             self.app_settings = None
-
-        root.title("Chi Tweet Scraper 1.4.0   (Data Creator)")
+        
+        root.title("Chi Tweet Scraper 1.2.0   (Data Creator)")
         root.geometry("850x850")
         root.resizable(True, True)
         root.minsize(800, 800)
@@ -172,11 +169,11 @@ class TweetScraperApp:
         self._is_running = False
         # FIX: Track current scrape state for better resume
         self.current_scrape_state = {}
-
+        
         # API Mode tracking
         self.api_scraper = None  # Current API scraper instance
         self.scraping_method = tk.StringVar(value="cookie")  # "cookie" or API provider
-
+        
         # Feature managers
         if FEATURES_AVAILABLE:
             self.settings_manager = SettingsManager()
@@ -188,7 +185,7 @@ class TweetScraperApp:
             self.history_manager = None
             self.scrape_queue = None
             self.filters = None
-
+        
         # Scrape tracking for analytics
         self._scrape_start_time = None
         self._last_scraped_tweets = []  # Store for preview/analytics
@@ -208,9 +205,7 @@ class TweetScraperApp:
         self.setup_styles()
         self.create_ui()
         self.root.after(500, self.check_for_saved_state)
-        self.root.after(
-            600, self._load_last_settings
-        )  # Load settings after UI is built
+        self.root.after(600, self._load_last_settings)  # Load settings after UI is built
 
     def _should_stop(self) -> bool:
         """
@@ -240,10 +235,10 @@ class TweetScraperApp:
             background=[("selected", Colors.BG)],
             foreground=[("selected", Colors.PRIMARY)],
         )
-
+        
         # Entry styling
         style.configure(
-            "TEntry",
+            "TEntry", 
             padding=6,
             fieldbackground=Colors.BG_SECONDARY,
             foreground=Colors.TEXT,
@@ -251,16 +246,13 @@ class TweetScraperApp:
         )
         style.map(
             "TEntry",
-            fieldbackground=[
-                ("focus", Colors.BG_SECONDARY),
-                ("!focus", Colors.BG_SECONDARY),
-            ],
+            fieldbackground=[("focus", Colors.BG_SECONDARY), ("!focus", Colors.BG_SECONDARY)],
             foreground=[("focus", Colors.TEXT), ("!focus", Colors.TEXT)],
         )
-
+        
         # Combobox styling
         style.configure(
-            "TCombobox",
+            "TCombobox", 
             padding=4,
             fieldbackground=Colors.BG_SECONDARY,
             background=Colors.BG_SECONDARY,
@@ -271,20 +263,14 @@ class TweetScraperApp:
         )
         style.map(
             "TCombobox",
-            fieldbackground=[
-                ("readonly", Colors.BG_SECONDARY),
-                ("focus", Colors.BG_SECONDARY),
-            ],
-            background=[
-                ("active", Colors.BG_SECONDARY),
-                ("pressed", Colors.BG_SECONDARY),
-            ],
+            fieldbackground=[("readonly", Colors.BG_SECONDARY), ("focus", Colors.BG_SECONDARY)],
+            background=[("active", Colors.BG_SECONDARY), ("pressed", Colors.BG_SECONDARY)],
             foreground=[("readonly", Colors.TEXT), ("focus", Colors.TEXT)],
             arrowcolor=[("disabled", Colors.TEXT_SECONDARY)],
             selectbackground=[("focus", Colors.PRIMARY)],
             selectforeground=[("focus", "white")],
         )
-
+        
         # Checkbutton styling
         style.configure(
             "TCheckbutton",
@@ -297,12 +283,9 @@ class TweetScraperApp:
             "TCheckbutton",
             background=[("active", Colors.BG), ("pressed", Colors.BG)],
             foreground=[("active", Colors.TEXT), ("disabled", Colors.TEXT_SECONDARY)],
-            indicatorcolor=[
-                ("selected", Colors.PRIMARY),
-                ("!selected", Colors.BG_SECONDARY),
-            ],
+            indicatorcolor=[("selected", Colors.PRIMARY), ("!selected", Colors.BG_SECONDARY)],
         )
-
+        
         # Radiobutton styling
         style.configure(
             "TRadiobutton",
@@ -316,17 +299,17 @@ class TweetScraperApp:
             background=[("active", Colors.BG), ("pressed", Colors.BG)],
             foreground=[("active", Colors.TEXT)],
         )
-
+        
         # Progress bar
         style.configure(
             "Blue.Horizontal.TProgressbar",
             background=Colors.PRIMARY,
             troughcolor=Colors.BORDER,
         )
-
+        
         # Spinbox styling
         style.configure(
-            "TSpinbox",
+            "TSpinbox", 
             padding=4,
             fieldbackground=Colors.BG_SECONDARY,
             background=Colors.BG_SECONDARY,
@@ -340,7 +323,7 @@ class TweetScraperApp:
             foreground=[("focus", Colors.TEXT)],
             arrowcolor=[("disabled", Colors.TEXT_SECONDARY)],
         )
-
+        
         # Scrollbar styling
         style.configure(
             "Vertical.TScrollbar",
@@ -353,14 +336,12 @@ class TweetScraperApp:
             "Vertical.TScrollbar",
             background=[("active", Colors.BORDER), ("pressed", Colors.PRIMARY)],
         )
-
+        
         # Frame styling
         style.configure("TFrame", background=Colors.BG)
         style.configure("TLabelframe", background=Colors.BG, foreground=Colors.TEXT)
-        style.configure(
-            "TLabelframe.Label", background=Colors.BG, foreground=Colors.TEXT
-        )
-
+        style.configure("TLabelframe.Label", background=Colors.BG, foreground=Colors.TEXT)
+        
         # Button styling (for ttk buttons if used)
         style.configure(
             "TButton",
@@ -377,7 +358,7 @@ class TweetScraperApp:
 
     def _create_button(self, parent, text, command, style="secondary", **kwargs):
         """Create a properly themed button.
-
+        
         Styles: 'primary', 'secondary', 'success', 'error', 'ghost'
         """
         styles = {
@@ -412,9 +393,9 @@ class TweetScraperApp:
                 "activeforeground": Colors.TEXT,
             },
         }
-
+        
         s = styles.get(style, styles["secondary"])
-
+        
         btn = tk.Button(
             parent,
             text=text,
@@ -431,17 +412,16 @@ class TweetScraperApp:
             pady=kwargs.get("pady", 6),
             width=kwargs.get("width", None),
         )
-
+        
         # Add hover effect
         def on_enter(e):
             btn.config(bg=s["activebackground"])
-
         def on_leave(e):
             btn.config(bg=s["bg"])
-
+        
         btn.bind("<Enter>", on_enter)
         btn.bind("<Leave>", on_leave)
-
+        
         return btn
 
     def create_ui(self):
@@ -527,7 +507,7 @@ class TweetScraperApp:
         # Right side buttons frame
         btn_frame = tk.Frame(header, bg=Colors.BG)
         btn_frame.grid(row=0, column=2)
-
+        
         # Dark mode toggle
         self.dark_mode_var = tk.BooleanVar(value=Colors.is_dark_mode())
         self.dark_mode_btn = tk.Button(
@@ -610,11 +590,11 @@ class TweetScraperApp:
         # ========================================
         row1 = tk.Frame(inner, bg=Colors.BG)
         row1.pack(fill="x", pady=(0, 6))
-
+        
         # Left side: Scraping Method
         method_frame = tk.Frame(row1, bg=Colors.BG)
         method_frame.pack(side="left")
-
+        
         tk.Label(
             method_frame,
             text="Method:",
@@ -627,7 +607,7 @@ class TweetScraperApp:
         self.method_options = self._build_scraping_method_options()
         self.method_display_map = {opt[0]: opt[1] for opt in self.method_options}
         method_values = [opt[0] for opt in self.method_options]
-
+        
         self.method_var = tk.StringVar(value=method_values[0])
         self.method_combo = ttk.Combobox(
             method_frame,
@@ -653,7 +633,7 @@ class TweetScraperApp:
             width=2,
         )
         self.config_btn.pack(side="left", padx=(4, 0))
-
+        
         # API status indicator (compact)
         self.api_status_lbl = tk.Label(
             method_frame,
@@ -667,14 +647,12 @@ class TweetScraperApp:
         self._update_config_button()
 
         # Separator
-        tk.Frame(row1, bg=Colors.BORDER, width=1).pack(
-            side="left", fill="y", padx=15, pady=2
-        )
+        tk.Frame(row1, bg=Colors.BORDER, width=1).pack(side="left", fill="y", padx=15, pady=2)
 
         # Right side: Export format + directory
         export_frame = tk.Frame(row1, bg=Colors.BG)
         export_frame.pack(side="left", fill="x", expand=True)
-
+        
         tk.Label(
             export_frame,
             text="Export:",
@@ -708,17 +686,15 @@ class TweetScraperApp:
             width=2,
         )
         folder_btn.pack(side="right")
-
+        
         # Save directory (takes remaining space)
         # Check if save_dir has a value, if not show placeholder
         if not self.save_dir.get() or not os.path.exists(self.save_dir.get()):
             self.save_dir.set("")
-
-        self.save_dir_entry = ttk.Entry(
-            export_frame, textvariable=self.save_dir, state="readonly"
-        )
+        
+        self.save_dir_entry = ttk.Entry(export_frame, textvariable=self.save_dir, state="readonly")
         self.save_dir_entry.pack(side="left", fill="x", expand=True, padx=(0, 5))
-
+        
         # Add placeholder behavior
         self._update_save_dir_placeholder()
 
@@ -756,9 +732,7 @@ class TweetScraperApp:
         self.file_btn.pack(side="left", padx=(8, 0))
 
         # Separator
-        tk.Frame(row2, bg=Colors.BORDER, width=1).pack(
-            side="left", fill="y", padx=15, pady=2
-        )
+        tk.Frame(row2, bg=Colors.BORDER, width=1).pack(side="left", fill="y", padx=15, pady=2)
 
         # Right side: Break settings
         break_frame = tk.Frame(row2, bg=Colors.BG)
@@ -971,7 +945,7 @@ class TweetScraperApp:
                 padx=6,
             )
             self.filter_btn.pack(side="right", padx=(0, 5))
-
+            
             # Cost estimate button
             self.cost_btn = tk.Button(
                 row3,
@@ -986,7 +960,7 @@ class TweetScraperApp:
                 padx=6,
             )
             self.cost_btn.pack(side="right", padx=(0, 5))
-
+            
             # History button
             self.history_btn = tk.Button(
                 row3,
@@ -1612,39 +1586,39 @@ class TweetScraperApp:
         options = [
             ("🍪 Cookie-based (Free)", "cookie"),
         ]
-
+        
         if API_MODULE_AVAILABLE:
             # Add available API providers
             for provider in get_available_providers():
                 info = get_provider_info(provider)
                 display = f"🔑 {info['name']} ({info['pricing_display']})"
                 options.append((display, provider.value))
-
+            
             # Add coming soon providers (disabled)
             for provider in APIProviderType:
                 if not is_provider_available(provider):
                     info = get_provider_info(provider)
                     display = f"⏳ {info['name']} (Coming Soon)"
                     options.append((display, f"_{provider.value}_disabled"))
-
+        
         return options
 
     def _on_method_changed(self, event=None):
         """Handle scraping method selection change."""
         selected = self.method_var.get()
         method_value = self.method_display_map.get(selected, "cookie")
-
+        
         # Check if disabled option selected
         if method_value.startswith("_") and method_value.endswith("_disabled"):
             messagebox.showinfo(
                 "Coming Soon",
                 "This API provider is not yet implemented.\n\n"
-                "It will be available in a future update.",
+                "It will be available in a future update."
             )
             # Reset to cookie-based
             self.method_var.set(self.method_options[0][0])
             method_value = "cookie"
-
+        
         # Check if API key is configured
         if method_value != "cookie" and API_MODULE_AVAILABLE:
             api_key = get_api_key(method_value)
@@ -1652,7 +1626,7 @@ class TweetScraperApp:
                 result = messagebox.askyesno(
                     "API Key Required",
                     f"No API key configured for this provider.\n\n"
-                    f"Would you like to add one now?",
+                    f"Would you like to add one now?"
                 )
                 if result:
                     self.show_api_key_dialog()
@@ -1660,7 +1634,7 @@ class TweetScraperApp:
                     # Reset to cookie-based
                     self.method_var.set(self.method_options[0][0])
                     method_value = "cookie"
-
+        
         self.scraping_method.set(method_value)
         self._update_api_status()
         self._update_cookie_section_visibility()
@@ -1668,13 +1642,11 @@ class TweetScraperApp:
 
     def _update_api_status(self):
         """Update API status indicator."""
-        if not hasattr(self, "api_status_lbl"):
+        if not hasattr(self, 'api_status_lbl'):
             return
-
-        method = (
-            self.scraping_method.get() if hasattr(self, "scraping_method") else "cookie"
-        )
-
+            
+        method = self.scraping_method.get() if hasattr(self, 'scraping_method') else "cookie"
+        
         if method == "cookie":
             self.api_status_lbl.config(text="", fg=Colors.TEXT_SECONDARY)
         elif API_MODULE_AVAILABLE:
@@ -1688,31 +1660,25 @@ class TweetScraperApp:
 
     def _update_cookie_section_visibility(self):
         """Show/hide cookie section based on scraping method."""
-        method = (
-            self.scraping_method.get() if hasattr(self, "scraping_method") else "cookie"
-        )
-
+        method = self.scraping_method.get() if hasattr(self, 'scraping_method') else "cookie"
+        
         # Cookie section is only relevant for cookie-based scraping
-        if hasattr(self, "cookie_toggle_btn"):
+        if hasattr(self, 'cookie_toggle_btn'):
             if method == "cookie":
                 self.cookie_toggle_btn.config(state="normal", fg=Colors.PRIMARY)
             else:
-                self.cookie_toggle_btn.config(
-                    state="disabled", fg=Colors.TEXT_SECONDARY
-                )
+                self.cookie_toggle_btn.config(state="disabled", fg=Colors.TEXT_SECONDARY)
                 # Collapse if expanded
-                if hasattr(self, "cookie_expanded") and self.cookie_expanded.get():
+                if hasattr(self, 'cookie_expanded') and self.cookie_expanded.get():
                     self.toggle_cookie_section()
 
     def _update_config_button(self):
         """Update config button icon based on selected method (🍪 or ⚙)."""
-        if not hasattr(self, "config_btn"):
+        if not hasattr(self, 'config_btn'):
             return
-
-        method = (
-            self.scraping_method.get() if hasattr(self, "scraping_method") else "cookie"
-        )
-
+        
+        method = self.scraping_method.get() if hasattr(self, 'scraping_method') else "cookie"
+        
         if method == "cookie":
             self.config_btn.config(text="🍪")
         else:
@@ -1720,10 +1686,8 @@ class TweetScraperApp:
 
     def _on_config_btn_click(self):
         """Handle config button click - opens appropriate dialog based on method."""
-        method = (
-            self.scraping_method.get() if hasattr(self, "scraping_method") else "cookie"
-        )
-
+        method = self.scraping_method.get() if hasattr(self, 'scraping_method') else "cookie"
+        
         if method == "cookie":
             self.show_cookie_dialog()
         else:
@@ -1733,9 +1697,7 @@ class TweetScraperApp:
         """Update save directory display with placeholder if empty."""
         if not self.save_dir.get():
             # Create default exports folder
-            default_dir = os.path.join(
-                os.path.dirname(__file__), "..", "data", "exports"
-            )
+            default_dir = os.path.join(os.path.dirname(__file__), "..", "data", "exports")
             os.makedirs(default_dir, exist_ok=True)
             self.save_dir.set(os.path.abspath(default_dir))
 
@@ -1748,16 +1710,16 @@ class TweetScraperApp:
         dialog.transient(self.root)
         dialog.grab_set()
         dialog.configure(bg=Colors.BG)
-
+        
         # Center dialog
         dialog.update_idletasks()
         x = (dialog.winfo_screenwidth() // 2) - 275
         y = (dialog.winfo_screenheight() // 2) - 175
         dialog.geometry(f"550x350+{x}+{y}")
-
+        
         main = tk.Frame(dialog, bg=Colors.BG, padx=20, pady=15)
         main.pack(fill="both", expand=True)
-
+        
         # Header
         tk.Label(
             main,
@@ -1766,7 +1728,7 @@ class TweetScraperApp:
             bg=Colors.BG,
             fg=Colors.TEXT,
         ).pack(anchor="w", pady=(0, 10))
-
+        
         # Instructions
         tk.Label(
             main,
@@ -1775,11 +1737,11 @@ class TweetScraperApp:
             bg=Colors.BG,
             fg=Colors.TEXT_SECONDARY,
         ).pack(anchor="w", pady=(0, 5))
-
+        
         # Text area for cookies
         cookie_frame = tk.Frame(main, bg=Colors.BG)
         cookie_frame.pack(fill="both", expand=True, pady=(0, 10))
-
+        
         cookie_text = tk.Text(
             cookie_frame,
             height=10,
@@ -1789,11 +1751,11 @@ class TweetScraperApp:
             bd=1,
         )
         cookie_text.pack(fill="both", expand=True)
-
+        
         # Help link
         help_frame = tk.Frame(main, bg=Colors.BG)
         help_frame.pack(fill="x", pady=(0, 10))
-
+        
         tk.Label(
             help_frame,
             text="Need help?",
@@ -1801,7 +1763,7 @@ class TweetScraperApp:
             bg=Colors.BG,
             fg=Colors.TEXT_SECONDARY,
         ).pack(side="left")
-
+        
         help_link = tk.Label(
             help_frame,
             text="Watch tutorial",
@@ -1811,14 +1773,12 @@ class TweetScraperApp:
             cursor="hand2",
         )
         help_link.pack(side="left", padx=(5, 0))
-        help_link.bind(
-            "<Button-1>", lambda e: webbrowser.open("https://youtu.be/RKX2sgQVgBg")
-        )
-
+        help_link.bind("<Button-1>", lambda e: webbrowser.open("https://youtu.be/RKX2sgQVgBg"))
+        
         # Buttons
         btn_frame = tk.Frame(main, bg=Colors.BG)
         btn_frame.pack(fill="x")
-
+        
         def save_cookies():
             raw = cookie_text.get("1.0", tk.END).strip()
             if not raw:
@@ -1829,11 +1789,8 @@ class TweetScraperApp:
                 messagebox.showinfo("Success", "Cookies saved successfully!")
                 dialog.destroy()
             else:
-                messagebox.showerror(
-                    "Error",
-                    "Invalid cookie format.\n\nMake sure to export as JSON from Cookie-Editor.",
-                )
-
+                messagebox.showerror("Error", "Invalid cookie format.\n\nMake sure to export as JSON from Cookie-Editor.")
+        
         tk.Button(
             btn_frame,
             text="Save Cookies",
@@ -1846,7 +1803,7 @@ class TweetScraperApp:
             padx=16,
             pady=6,
         ).pack(side="right")
-
+        
         tk.Button(
             btn_frame,
             text="Cancel",
@@ -1862,24 +1819,22 @@ class TweetScraperApp:
 
     def _is_using_api(self):
         """Check if currently using API-based scraping."""
-        method = (
-            self.scraping_method.get() if hasattr(self, "scraping_method") else "cookie"
-        )
+        method = self.scraping_method.get() if hasattr(self, 'scraping_method') else "cookie"
         return method != "cookie"
 
     def _get_api_scraper(self):
         """Get configured API scraper instance."""
         if not API_MODULE_AVAILABLE:
             return None
-
+        
         method = self.scraping_method.get()
         if method == "cookie":
             return None
-
+        
         api_key = get_api_key(method)
         if not api_key:
             return None
-
+        
         try:
             provider = APIProviderType(method)
             return get_scraper(provider, api_key=api_key)
@@ -1893,10 +1848,10 @@ class TweetScraperApp:
             messagebox.showinfo(
                 "API Module Not Available",
                 "The API module is not installed.\n\n"
-                "Please ensure the src/api and src/config folders are present.",
+                "Please ensure the src/api and src/config folders are present."
             )
             return
-
+        
         dialog = tk.Toplevel(self.root)
         dialog.title("API Key Management")
         dialog.geometry("550x400")
@@ -1948,7 +1903,7 @@ class TweetScraperApp:
 
         # Store entry widgets for saving
         self._api_key_entries = {}
-
+        
         manager = get_api_key_manager()
         status = manager.get_all_status()
 
@@ -1957,23 +1912,23 @@ class TweetScraperApp:
             info = get_provider_info(provider)
             provider_key = provider.value
             provider_status = status.get(provider_key, {})
-
+            
             # Provider frame
             prov_frame = tk.Frame(keys_frame, bg=Colors.BG_SECONDARY, padx=10, pady=8)
             prov_frame.pack(fill="x", pady=(0, 10))
-
+            
             # Top row: Name and pricing
             top_row = tk.Frame(prov_frame, bg=Colors.BG_SECONDARY)
             top_row.pack(fill="x")
-
+            
             tk.Label(
                 top_row,
-                text=info["name"],
+                text=info['name'],
                 font=("Segoe UI", 10, "bold"),
                 bg=Colors.BG_SECONDARY,
                 fg=Colors.TEXT,
             ).pack(side="left")
-
+            
             tk.Label(
                 top_row,
                 text=f"  •  {info['pricing_display']}",
@@ -1981,14 +1936,13 @@ class TweetScraperApp:
                 bg=Colors.BG_SECONDARY,
                 fg=Colors.TEXT_SECONDARY,
             ).pack(side="left")
-
+            
             # Signup link
-            signup_url = info.get("signup_url") or info.get("website", "")
+            signup_url = info.get('signup_url') or info.get('website', '')
             if signup_url:
-
                 def make_open_link(url):
                     return lambda e: webbrowser.open(url)
-
+                
                 link_lbl = tk.Label(
                     top_row,
                     text="Get API Key →",
@@ -1999,15 +1953,15 @@ class TweetScraperApp:
                 )
                 link_lbl.pack(side="left", padx=(10, 0))
                 link_lbl.bind("<Button-1>", make_open_link(signup_url))
-
+            
             # Status indicator
-            if provider_status.get("configured"):
+            if provider_status.get('configured'):
                 status_text = "✓ Configured"
                 status_color = Colors.SUCCESS
             else:
                 status_text = "Not configured"
                 status_color = Colors.TEXT_SECONDARY
-
+            
             tk.Label(
                 top_row,
                 text=status_text,
@@ -2015,34 +1969,32 @@ class TweetScraperApp:
                 bg=Colors.BG_SECONDARY,
                 fg=status_color,
             ).pack(side="right")
-
+            
             # Bottom row: Key entry
             bottom_row = tk.Frame(prov_frame, bg=Colors.BG_SECONDARY)
             bottom_row.pack(fill="x", pady=(8, 0))
             bottom_row.columnconfigure(0, weight=1)
-
+            
             key_entry = ttk.Entry(bottom_row, show="•", width=50)
             key_entry.grid(row=0, column=0, sticky="ew", padx=(0, 8))
-
+            
             # Pre-fill with existing key if any
             existing_key = manager.get_key(provider_key)
             if existing_key:
                 key_entry.insert(0, existing_key)
-
+            
             self._api_key_entries[provider_key] = key_entry
-
+            
             # Show/Hide button
             show_var = tk.BooleanVar(value=False)
-
             def make_toggle(entry, var):
                 def toggle():
                     if var.get():
                         entry.config(show="")
                     else:
                         entry.config(show="•")
-
                 return toggle
-
+            
             show_btn = ttk.Checkbutton(
                 bottom_row,
                 text="Show",
@@ -2050,22 +2002,20 @@ class TweetScraperApp:
                 command=make_toggle(key_entry, show_var),
             )
             show_btn.grid(row=0, column=1, padx=(0, 5))
-
+            
             # Test button
             def make_test(prov_key, entry):
                 def test():
                     key = entry.get().strip()
                     if not key:
-                        messagebox.showwarning(
-                            "No Key", "Please enter an API key first."
-                        )
+                        messagebox.showwarning("No Key", "Please enter an API key first.")
                         return
-
+                    
                     # Show testing message
                     self.root.config(cursor="wait")
                     dialog.config(cursor="wait")
                     dialog.update()
-
+                    
                     try:
                         success, message = test_api_key(APIProviderType(prov_key), key)
                         if success:
@@ -2077,9 +2027,9 @@ class TweetScraperApp:
                     finally:
                         self.root.config(cursor="")
                         dialog.config(cursor="")
-
+                
                 return test
-
+            
             test_btn = tk.Button(
                 bottom_row,
                 text="Test",
@@ -2093,19 +2043,17 @@ class TweetScraperApp:
                 padx=8,
             )
             test_btn.grid(row=0, column=2)
-
+            
             row += 1
 
         # Coming soon providers
         for provider in APIProviderType:
             if not is_provider_available(provider):
                 info = get_provider_info(provider)
-
-                prov_frame = tk.Frame(
-                    keys_frame, bg=Colors.BG_SECONDARY, padx=10, pady=8
-                )
+                
+                prov_frame = tk.Frame(keys_frame, bg=Colors.BG_SECONDARY, padx=10, pady=8)
                 prov_frame.pack(fill="x", pady=(0, 10))
-
+                
                 tk.Label(
                     prov_frame,
                     text=f"{info['name']}  •  {info['pricing_display']}",
@@ -2113,7 +2061,7 @@ class TweetScraperApp:
                     bg=Colors.BG_SECONDARY,
                     fg=Colors.TEXT_SECONDARY,
                 ).pack(side="left")
-
+                
                 tk.Label(
                     prov_frame,
                     text="Coming Soon",
@@ -2137,7 +2085,7 @@ class TweetScraperApp:
                 else:
                     # Clear key if empty
                     set_api_key(provider_key, "", enabled=False)
-
+            
             self._update_api_status()
             messagebox.showinfo("Saved", f"API keys saved successfully.")
             dialog.destroy()
@@ -2171,16 +2119,16 @@ class TweetScraperApp:
     # ========================================
     # FEATURE DIALOGS
     # ========================================
-
+    
     def _on_date_preset_selected(self, event=None):
         """Handle date preset selection."""
         if not FEATURES_AVAILABLE:
             return
-
+        
         preset_name = self.date_preset_var.get()
         if preset_name == "Custom":
             return
-
+        
         presets = get_date_presets()
         for name, start, end in presets:
             if name == preset_name:
@@ -2192,10 +2140,8 @@ class TweetScraperApp:
 
     def show_cost_estimate(self):
         """Show estimated cost dialog."""
-        method = (
-            self.scraping_method.get() if hasattr(self, "scraping_method") else "cookie"
-        )
-
+        method = self.scraping_method.get() if hasattr(self, 'scraping_method') else "cookie"
+        
         # Calculate date range days
         try:
             start = self.start_entry.get().strip()
@@ -2208,12 +2154,12 @@ class TweetScraperApp:
                 days = 30
         except:
             days = 30
-
+        
         # Rough estimate: 5-20 tweets per day depending on user
         est_low = days * 5
         est_high = days * 20
         est_mid = days * 10
-
+        
         if method == "cookie":
             cost_str = "Free (Cookie-based)"
             detail = "Cookie-based scraping has no direct cost."
@@ -2222,10 +2168,8 @@ class TweetScraperApp:
             cost_high = estimate_cost(method, est_high) if FEATURES_AVAILABLE else 0
             cost_mid = estimate_cost(method, est_mid) if FEATURES_AVAILABLE else 0
             cost_str = f"${cost_low:.2f} - ${cost_high:.2f}"
-            detail = (
-                f"Based on {days} days, estimating {est_low:,} - {est_high:,} tweets"
-            )
-
+            detail = f"Based on {days} days, estimating {est_low:,} - {est_high:,} tweets"
+        
         messagebox.showinfo(
             "Cost Estimate",
             f"📊 Estimated Cost\n\n"
@@ -2233,7 +2177,7 @@ class TweetScraperApp:
             f"Date range: {days} days\n\n"
             f"Estimated tweets: {est_low:,} - {est_high:,}\n"
             f"Estimated cost: {cost_str}\n\n"
-            f"Note: Actual results vary by account activity.",
+            f"Note: Actual results vary by account activity."
         )
 
     def show_filter_dialog(self):
@@ -2241,7 +2185,7 @@ class TweetScraperApp:
         if not FEATURES_AVAILABLE:
             messagebox.showinfo("Filters", "Filter feature not available.")
             return
-
+        
         dialog = tk.Toplevel(self.root)
         dialog.title("Filter Settings")
         dialog.geometry("400x350")
@@ -2249,16 +2193,16 @@ class TweetScraperApp:
         dialog.transient(self.root)
         dialog.grab_set()
         dialog.configure(bg=Colors.BG)
-
+        
         # Center dialog
         dialog.update_idletasks()
         x = (dialog.winfo_screenwidth() // 2) - 200
         y = (dialog.winfo_screenheight() // 2) - 175
         dialog.geometry(f"400x350+{x}+{y}")
-
+        
         main = tk.Frame(dialog, bg=Colors.BG, padx=20, pady=15)
         main.pack(fill="both", expand=True)
-
+        
         # Header
         tk.Label(
             main,
@@ -2267,7 +2211,7 @@ class TweetScraperApp:
             bg=Colors.BG,
             fg=Colors.TEXT,
         ).pack(anchor="w", pady=(0, 15))
-
+        
         tk.Label(
             main,
             text="Filter tweets during scraping:",
@@ -2275,79 +2219,42 @@ class TweetScraperApp:
             bg=Colors.BG,
             fg=Colors.TEXT_SECONDARY,
         ).pack(anchor="w", pady=(0, 10))
-
+        
         # Engagement filters
-        eng_frame = tk.LabelFrame(
-            main,
-            text="Engagement Filters",
-            bg=Colors.BG,
-            fg=Colors.TEXT,
-            padx=10,
-            pady=10,
-        )
+        eng_frame = tk.LabelFrame(main, text="Engagement Filters", bg=Colors.BG, fg=Colors.TEXT, padx=10, pady=10)
         eng_frame.pack(fill="x", pady=(0, 10))
-
+        
         # Min likes
         likes_row = tk.Frame(eng_frame, bg=Colors.BG)
         likes_row.pack(fill="x", pady=2)
-        tk.Label(
-            likes_row,
-            text="Min likes:",
-            font=("Segoe UI", 9),
-            bg=Colors.BG,
-            fg=Colors.TEXT,
-            width=12,
-            anchor="w",
-        ).pack(side="left")
+        tk.Label(likes_row, text="Min likes:", font=("Segoe UI", 9), bg=Colors.BG, fg=Colors.TEXT, width=12, anchor="w").pack(side="left")
         self._filter_min_likes = tk.StringVar(value=str(self.filters.min_likes))
-        ttk.Spinbox(
-            likes_row, from_=0, to=100000, textvariable=self._filter_min_likes, width=10
-        ).pack(side="left")
-
+        ttk.Spinbox(likes_row, from_=0, to=100000, textvariable=self._filter_min_likes, width=10).pack(side="left")
+        
         # Min retweets
         rt_row = tk.Frame(eng_frame, bg=Colors.BG)
         rt_row.pack(fill="x", pady=2)
-        tk.Label(
-            rt_row,
-            text="Min retweets:",
-            font=("Segoe UI", 9),
-            bg=Colors.BG,
-            fg=Colors.TEXT,
-            width=12,
-            anchor="w",
-        ).pack(side="left")
+        tk.Label(rt_row, text="Min retweets:", font=("Segoe UI", 9), bg=Colors.BG, fg=Colors.TEXT, width=12, anchor="w").pack(side="left")
         self._filter_min_rt = tk.StringVar(value=str(self.filters.min_retweets))
-        ttk.Spinbox(
-            rt_row, from_=0, to=100000, textvariable=self._filter_min_rt, width=10
-        ).pack(side="left")
-
+        ttk.Spinbox(rt_row, from_=0, to=100000, textvariable=self._filter_min_rt, width=10).pack(side="left")
+        
         # Content filters
-        content_frame = tk.LabelFrame(
-            main, text="Content Filters", bg=Colors.BG, fg=Colors.TEXT, padx=10, pady=10
-        )
+        content_frame = tk.LabelFrame(main, text="Content Filters", bg=Colors.BG, fg=Colors.TEXT, padx=10, pady=10)
         content_frame.pack(fill="x", pady=(0, 10))
-
+        
         self._filter_excl_rt = tk.BooleanVar(value=self.filters.exclude_retweets)
-        ttk.Checkbutton(
-            content_frame, text="Exclude retweets", variable=self._filter_excl_rt
-        ).pack(anchor="w")
-
+        ttk.Checkbutton(content_frame, text="Exclude retweets", variable=self._filter_excl_rt).pack(anchor="w")
+        
         self._filter_excl_replies = tk.BooleanVar(value=self.filters.exclude_replies)
-        ttk.Checkbutton(
-            content_frame, text="Exclude replies", variable=self._filter_excl_replies
-        ).pack(anchor="w")
-
+        ttk.Checkbutton(content_frame, text="Exclude replies", variable=self._filter_excl_replies).pack(anchor="w")
+        
         self._filter_media = tk.BooleanVar(value=self.filters.media_only)
-        ttk.Checkbutton(
-            content_frame,
-            text="Media only (tweets with images/video)",
-            variable=self._filter_media,
-        ).pack(anchor="w")
-
+        ttk.Checkbutton(content_frame, text="Media only (tweets with images/video)", variable=self._filter_media).pack(anchor="w")
+        
         # Buttons
         btn_frame = tk.Frame(main, bg=Colors.BG)
         btn_frame.pack(fill="x", pady=(15, 0))
-
+        
         def save_filters():
             try:
                 self.filters.min_likes = int(self._filter_min_likes.get())
@@ -2357,7 +2264,7 @@ class TweetScraperApp:
             self.filters.exclude_retweets = self._filter_excl_rt.get()
             self.filters.exclude_replies = self._filter_excl_replies.get()
             self.filters.media_only = self._filter_media.get()
-
+            
             # Save to settings
             if self.settings_manager:
                 self.settings_manager.update(
@@ -2367,34 +2274,20 @@ class TweetScraperApp:
                     exclude_replies=self.filters.exclude_replies,
                     media_only=self.filters.media_only,
                 )
-
+            
             dialog.destroy()
             messagebox.showinfo("Saved", "Filter settings saved.")
-
+        
         tk.Button(
-            btn_frame,
-            text="Save",
-            command=save_filters,
-            bg=Colors.PRIMARY,
-            fg="white",
-            font=("Segoe UI", 9),
-            relief="flat",
-            cursor="hand2",
-            padx=16,
-            pady=6,
+            btn_frame, text="Save", command=save_filters,
+            bg=Colors.PRIMARY, fg="white", font=("Segoe UI", 9),
+            relief="flat", cursor="hand2", padx=16, pady=6,
         ).pack(side="right")
-
+        
         tk.Button(
-            btn_frame,
-            text="Cancel",
-            command=dialog.destroy,
-            bg=Colors.BG_SECONDARY,
-            fg=Colors.TEXT,
-            font=("Segoe UI", 9),
-            relief="flat",
-            cursor="hand2",
-            padx=12,
-            pady=6,
+            btn_frame, text="Cancel", command=dialog.destroy,
+            bg=Colors.BG_SECONDARY, fg=Colors.TEXT, font=("Segoe UI", 9),
+            relief="flat", cursor="hand2", padx=12, pady=6,
         ).pack(side="right", padx=(0, 8))
 
     def show_history_dialog(self):
@@ -2402,27 +2295,27 @@ class TweetScraperApp:
         if not FEATURES_AVAILABLE or not self.history_manager:
             messagebox.showinfo("History", "History feature not available.")
             return
-
+        
         dialog = tk.Toplevel(self.root)
         dialog.title("Scrape History")
         dialog.geometry("700x450")
         dialog.resizable(True, True)
         dialog.transient(self.root)
         dialog.configure(bg=Colors.BG)
-
+        
         # Center dialog
         dialog.update_idletasks()
         x = (dialog.winfo_screenwidth() // 2) - 350
         y = (dialog.winfo_screenheight() // 2) - 225
         dialog.geometry(f"700x450+{x}+{y}")
-
+        
         main = tk.Frame(dialog, bg=Colors.BG, padx=15, pady=10)
         main.pack(fill="both", expand=True)
-
+        
         # Header with stats
         header = tk.Frame(main, bg=Colors.BG)
         header.pack(fill="x", pady=(0, 10))
-
+        
         tk.Label(
             header,
             text="📜 Scrape History",
@@ -2430,7 +2323,7 @@ class TweetScraperApp:
             bg=Colors.BG,
             fg=Colors.TEXT,
         ).pack(side="left")
-
+        
         stats = self.history_manager.get_total_stats()
         tk.Label(
             header,
@@ -2439,66 +2332,56 @@ class TweetScraperApp:
             bg=Colors.BG,
             fg=Colors.TEXT_SECONDARY,
         ).pack(side="right")
-
+        
         # Treeview for history
         tree_frame = tk.Frame(main, bg=Colors.BG)
         tree_frame.pack(fill="both", expand=True)
-
+        
         columns = ("date", "target", "tweets", "method", "cost", "status")
         tree = ttk.Treeview(tree_frame, columns=columns, show="headings", height=15)
-
+        
         tree.heading("date", text="Date")
         tree.heading("target", text="Target")
         tree.heading("tweets", text="Tweets")
         tree.heading("method", text="Method")
         tree.heading("cost", text="Cost")
         tree.heading("status", text="Status")
-
+        
         tree.column("date", width=130)
         tree.column("target", width=200)
         tree.column("tweets", width=70)
         tree.column("method", width=80)
         tree.column("cost", width=60)
         tree.column("status", width=80)
-
+        
         scrollbar = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
         tree.configure(yscrollcommand=scrollbar.set)
-
+        
         tree.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
-
+        
         # Populate history
         for record in self.history_manager.get_recent(50):
             cost_str = f"${record.cost:.2f}" if record.cost > 0 else "Free"
-            tree.insert(
-                "",
-                "end",
-                values=(
-                    record.timestamp,
-                    (
-                        record.target[:30] + "..."
-                        if len(record.target) > 30
-                        else record.target
-                    ),
-                    f"{record.tweet_count:,}",
-                    record.method,
-                    cost_str,
-                    record.status,
-                ),
-            )
-
+            tree.insert("", "end", values=(
+                record.timestamp,
+                record.target[:30] + "..." if len(record.target) > 30 else record.target,
+                f"{record.tweet_count:,}",
+                record.method,
+                cost_str,
+                record.status,
+            ))
+        
         # Buttons
         btn_frame = tk.Frame(main, bg=Colors.BG)
         btn_frame.pack(fill="x", pady=(10, 0))
-
+        
         def clear_history():
-            if messagebox.askyesno(
-                "Clear History", "Are you sure you want to clear all history?"
-            ):
+            if messagebox.askyesno("Clear History", "Are you sure you want to clear all history?"):
                 self.history_manager.clear()
                 for item in tree.get_children():
                     tree.delete(item)
-
+        
         def open_file():
             selected = tree.selection()
             if selected:
@@ -2507,54 +2390,31 @@ class TweetScraperApp:
                 if record.output_file and os.path.exists(record.output_file):
                     folder = os.path.dirname(record.output_file)
                     # Cross-platform folder open
-                    if sys.platform == "win32":
+                    if sys.platform == 'win32':
                         os.startfile(folder)
-                    elif sys.platform == "darwin":  # macOS
+                    elif sys.platform == 'darwin':  # macOS
                         import subprocess
-
-                        subprocess.run(["open", folder])
+                        subprocess.run(['open', folder])
                     else:  # Linux
                         import subprocess
-
-                        subprocess.run(["xdg-open", folder])
-
+                        subprocess.run(['xdg-open', folder])
+        
         tk.Button(
-            btn_frame,
-            text="📂 Open Folder",
-            command=open_file,
-            bg=Colors.BG_SECONDARY,
-            fg=Colors.TEXT,
-            font=("Segoe UI", 9),
-            relief="flat",
-            cursor="hand2",
-            padx=10,
-            pady=5,
+            btn_frame, text="📂 Open Folder", command=open_file,
+            bg=Colors.BG_SECONDARY, fg=Colors.TEXT, font=("Segoe UI", 9),
+            relief="flat", cursor="hand2", padx=10, pady=5,
         ).pack(side="left")
-
+        
         tk.Button(
-            btn_frame,
-            text="🗑 Clear All",
-            command=clear_history,
-            bg=Colors.BG_SECONDARY,
-            fg=Colors.ERROR,
-            font=("Segoe UI", 9),
-            relief="flat",
-            cursor="hand2",
-            padx=10,
-            pady=5,
+            btn_frame, text="🗑 Clear All", command=clear_history,
+            bg=Colors.BG_SECONDARY, fg=Colors.ERROR, font=("Segoe UI", 9),
+            relief="flat", cursor="hand2", padx=10, pady=5,
         ).pack(side="left", padx=(8, 0))
-
+        
         tk.Button(
-            btn_frame,
-            text="Close",
-            command=dialog.destroy,
-            bg=Colors.PRIMARY,
-            fg="white",
-            font=("Segoe UI", 9),
-            relief="flat",
-            cursor="hand2",
-            padx=16,
-            pady=5,
+            btn_frame, text="Close", command=dialog.destroy,
+            bg=Colors.PRIMARY, fg="white", font=("Segoe UI", 9),
+            relief="flat", cursor="hand2", padx=16, pady=5,
         ).pack(side="right")
 
     def show_preview_dialog(self, tweets: list, on_confirm):
@@ -2563,7 +2423,7 @@ class TweetScraperApp:
             messagebox.showinfo("Preview", "No tweets to preview.")
             on_confirm()
             return
-
+        
         dialog = tk.Toplevel(self.root)
         dialog.title(f"Preview - {len(tweets)} tweets")
         dialog.geometry("800x500")
@@ -2571,16 +2431,16 @@ class TweetScraperApp:
         dialog.transient(self.root)
         dialog.grab_set()
         dialog.configure(bg=Colors.BG)
-
+        
         # Center dialog
         dialog.update_idletasks()
         x = (dialog.winfo_screenwidth() // 2) - 400
         y = (dialog.winfo_screenheight() // 2) - 250
         dialog.geometry(f"800x500+{x}+{y}")
-
+        
         main = tk.Frame(dialog, bg=Colors.BG, padx=15, pady=10)
         main.pack(fill="both", expand=True)
-
+        
         # Header
         tk.Label(
             main,
@@ -2589,125 +2449,107 @@ class TweetScraperApp:
             bg=Colors.BG,
             fg=Colors.TEXT,
         ).pack(anchor="w", pady=(0, 10))
-
+        
         # Treeview
         tree_frame = tk.Frame(main, bg=Colors.BG)
         tree_frame.pack(fill="both", expand=True)
-
+        
         columns = ("date", "user", "text", "likes", "rt")
         tree = ttk.Treeview(tree_frame, columns=columns, show="headings", height=15)
-
+        
         tree.heading("date", text="Date")
         tree.heading("user", text="User")
         tree.heading("text", text="Text")
         tree.heading("likes", text="Likes")
         tree.heading("rt", text="RT")
-
+        
         tree.column("date", width=120)
         tree.column("user", width=100)
         tree.column("text", width=400)
         tree.column("likes", width=60)
         tree.column("rt", width=60)
-
+        
         scrollbar = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
         tree.configure(yscrollcommand=scrollbar.set)
-
+        
         tree.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
-
+        
         # Show first 100 tweets
         for tweet in tweets[:100]:
             if isinstance(tweet, dict):
-                date = tweet.get("date", "")[:16]
-                user = tweet.get("username", "")[:15]
-                text = tweet.get("text", "")[:80].replace("\n", " ")
-                likes = tweet.get("likes", 0)
-                rt = tweet.get("retweets", 0)
+                date = tweet.get('date', '')[:16]
+                user = tweet.get('username', '')[:15]
+                text = tweet.get('text', '')[:80].replace('\n', ' ')
+                likes = tweet.get('likes', 0)
+                rt = tweet.get('retweets', 0)
             else:
-                date = getattr(tweet, "date", "")[:16]
-                user = getattr(tweet, "username", "")[:15]
-                text = getattr(tweet, "text", "")[:80].replace("\n", " ")
-                likes = getattr(tweet, "likes", 0)
-                rt = getattr(tweet, "retweets", 0)
-
+                date = getattr(tweet, 'date', '')[:16]
+                user = getattr(tweet, 'username', '')[:15]
+                text = getattr(tweet, 'text', '')[:80].replace('\n', ' ')
+                likes = getattr(tweet, 'likes', 0)
+                rt = getattr(tweet, 'retweets', 0)
+            
             tree.insert("", "end", values=(date, user, text, likes, rt))
-
+        
         if len(tweets) > 100:
-            tree.insert(
-                "",
-                "end",
-                values=("...", "...", f"+ {len(tweets) - 100} more tweets", "", ""),
-            )
-
+            tree.insert("", "end", values=("...", "...", f"+ {len(tweets) - 100} more tweets", "", ""))
+        
         # Buttons
         btn_frame = tk.Frame(main, bg=Colors.BG)
         btn_frame.pack(fill="x", pady=(10, 0))
-
+        
         def confirm():
             dialog.destroy()
             on_confirm()
-
+        
         def cancel():
             dialog.destroy()
-
+        
         tk.Button(
-            btn_frame,
-            text="💾 Save",
-            command=confirm,
-            bg=Colors.PRIMARY,
-            fg="white",
-            font=("Segoe UI", 9),
-            relief="flat",
-            cursor="hand2",
-            padx=16,
-            pady=6,
+            btn_frame, text="💾 Save", command=confirm,
+            bg=Colors.PRIMARY, fg="white", font=("Segoe UI", 9),
+            relief="flat", cursor="hand2", padx=16, pady=6,
         ).pack(side="right")
-
+        
         tk.Button(
-            btn_frame,
-            text="Cancel",
-            command=cancel,
-            bg=Colors.BG_SECONDARY,
-            fg=Colors.TEXT,
-            font=("Segoe UI", 9),
-            relief="flat",
-            cursor="hand2",
-            padx=12,
-            pady=6,
+            btn_frame, text="Cancel", command=cancel,
+            bg=Colors.BG_SECONDARY, fg=Colors.TEXT, font=("Segoe UI", 9),
+            relief="flat", cursor="hand2", padx=12, pady=6,
         ).pack(side="right", padx=(0, 8))
 
     def show_analytics_dialog(self, tweets: list):
         """Show analytics after scrape completion."""
         if not FEATURES_AVAILABLE or not tweets:
             return
-
+        
         # Convert to dicts if needed
         tweet_dicts = []
         for t in tweets:
             if isinstance(t, dict):
                 tweet_dicts.append(t)
             else:
-                tweet_dicts.append(t.to_dict() if hasattr(t, "to_dict") else vars(t))
-
+                tweet_dicts.append(t.to_dict() if hasattr(t, 'to_dict') else vars(t))
+        
         analytics = calculate_analytics(tweet_dicts)
         summary = format_analytics_summary(analytics)
-
+        
         dialog = tk.Toplevel(self.root)
         dialog.title("Scrape Analytics")
         dialog.geometry("450x550")
         dialog.resizable(False, False)
         dialog.transient(self.root)
         dialog.configure(bg=Colors.BG)
-
+        
         # Center dialog
         dialog.update_idletasks()
         x = (dialog.winfo_screenwidth() // 2) - 225
         y = (dialog.winfo_screenheight() // 2) - 275
         dialog.geometry(f"450x550+{x}+{y}")
-
+        
         main = tk.Frame(dialog, bg=Colors.BG, padx=20, pady=15)
         main.pack(fill="both", expand=True)
-
+        
         # Text area with analytics
         text = tk.Text(
             main,
@@ -2721,19 +2563,12 @@ class TweetScraperApp:
         text.pack(fill="both", expand=True)
         text.insert("1.0", summary)
         text.config(state="disabled")
-
+        
         # Close button
         tk.Button(
-            main,
-            text="Close",
-            command=dialog.destroy,
-            bg=Colors.PRIMARY,
-            fg="white",
-            font=("Segoe UI", 9),
-            relief="flat",
-            cursor="hand2",
-            padx=16,
-            pady=6,
+            main, text="Close", command=dialog.destroy,
+            bg=Colors.PRIMARY, fg="white", font=("Segoe UI", 9),
+            relief="flat", cursor="hand2", padx=16, pady=6,
         ).pack(pady=(10, 0))
 
     def show_queue_dialog(self):
@@ -2741,23 +2576,23 @@ class TweetScraperApp:
         if not FEATURES_AVAILABLE:
             messagebox.showinfo("Queue", "Queue feature not available.")
             return
-
+        
         dialog = tk.Toplevel(self.root)
         dialog.title("Scrape Queue")
         dialog.geometry("500x400")
         dialog.resizable(True, True)
         dialog.transient(self.root)
         dialog.configure(bg=Colors.BG)
-
+        
         # Center dialog
         dialog.update_idletasks()
         x = (dialog.winfo_screenwidth() // 2) - 250
         y = (dialog.winfo_screenheight() // 2) - 200
         dialog.geometry(f"500x400+{x}+{y}")
-
+        
         main = tk.Frame(dialog, bg=Colors.BG, padx=15, pady=10)
         main.pack(fill="both", expand=True)
-
+        
         # Header
         tk.Label(
             main,
@@ -2766,150 +2601,107 @@ class TweetScraperApp:
             bg=Colors.BG,
             fg=Colors.TEXT,
         ).pack(anchor="w", pady=(0, 10))
-
+        
         # Add username input
         add_frame = tk.Frame(main, bg=Colors.BG)
         add_frame.pack(fill="x", pady=(0, 10))
-
-        tk.Label(
-            add_frame,
-            text="Add username:",
-            font=("Segoe UI", 9),
-            bg=Colors.BG,
-            fg=Colors.TEXT,
-        ).pack(side="left")
+        
+        tk.Label(add_frame, text="Add username:", font=("Segoe UI", 9), bg=Colors.BG, fg=Colors.TEXT).pack(side="left")
         username_entry = ttk.Entry(add_frame, width=25)
         username_entry.pack(side="left", padx=(8, 8))
-
+        
         def add_to_queue():
-            username = username_entry.get().strip().lstrip("@")
+            username = username_entry.get().strip().lstrip('@')
             if username:
                 self.scrape_queue.add(username)
                 refresh_list()
                 username_entry.delete(0, tk.END)
-
+        
         tk.Button(
-            add_frame,
-            text="Add",
-            command=add_to_queue,
-            bg=Colors.PRIMARY,
-            fg="white",
-            font=("Segoe UI", 8),
-            relief="flat",
-            cursor="hand2",
-            padx=10,
+            add_frame, text="Add", command=add_to_queue,
+            bg=Colors.PRIMARY, fg="white", font=("Segoe UI", 8),
+            relief="flat", cursor="hand2", padx=10,
         ).pack(side="left")
-
+        
         # Load from file button
         def load_from_file():
             file_path = filedialog.askopenfilename(
                 filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
             )
             if file_path:
-                with open(file_path, "r", encoding="utf-8") as f:
-                    usernames = [
-                        u.strip().lstrip("@")
-                        for u in f.read().replace("\n", ",").split(",")
-                        if u.strip()
-                    ]
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    usernames = [u.strip().lstrip('@') for u in f.read().replace('\n', ',').split(',') if u.strip()]
                     self.scrape_queue.add_multiple(usernames)
                     refresh_list()
-
+        
         tk.Button(
-            add_frame,
-            text="📂 Load File",
-            command=load_from_file,
-            bg=Colors.BG_SECONDARY,
-            fg=Colors.TEXT,
-            font=("Segoe UI", 8),
-            relief="flat",
-            cursor="hand2",
-            padx=8,
+            add_frame, text="📂 Load File", command=load_from_file,
+            bg=Colors.BG_SECONDARY, fg=Colors.TEXT, font=("Segoe UI", 8),
+            relief="flat", cursor="hand2", padx=8,
         ).pack(side="left", padx=(8, 0))
-
+        
         # Queue list
         list_frame = tk.Frame(main, bg=Colors.BG)
         list_frame.pack(fill="both", expand=True)
-
+        
         columns = ("username", "status", "tweets")
         tree = ttk.Treeview(list_frame, columns=columns, show="headings", height=12)
-
+        
         tree.heading("username", text="Username")
         tree.heading("status", text="Status")
         tree.heading("tweets", text="Tweets")
-
+        
         tree.column("username", width=200)
         tree.column("status", width=100)
         tree.column("tweets", width=80)
-
+        
         scrollbar = ttk.Scrollbar(list_frame, orient="vertical", command=tree.yview)
         tree.configure(yscrollcommand=scrollbar.set)
-
+        
         tree.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
-
+        
         def refresh_list():
             for item in tree.get_children():
                 tree.delete(item)
             for item in self.scrape_queue.items:
-                status_emoji = {
-                    "pending": "⏳",
-                    "running": "🔄",
-                    "completed": "✅",
-                    "error": "❌",
-                }.get(item.status, "")
-                tree.insert(
-                    "",
-                    "end",
-                    values=(
-                        f"@{item.username}",
-                        f"{status_emoji} {item.status}",
-                        str(item.tweet_count) if item.tweet_count else "-",
-                    ),
-                )
-
+                status_emoji = {"pending": "⏳", "running": "🔄", "completed": "✅", "error": "❌"}.get(item.status, "")
+                tree.insert("", "end", values=(
+                    f"@{item.username}",
+                    f"{status_emoji} {item.status}",
+                    str(item.tweet_count) if item.tweet_count else "-",
+                ))
+        
         refresh_list()
-
+        
         # Buttons
         btn_frame = tk.Frame(main, bg=Colors.BG)
         btn_frame.pack(fill="x", pady=(10, 0))
-
+        
         def remove_selected():
             selected = tree.selection()
             if selected:
                 for sel in selected:
-                    username = tree.item(sel)["values"][0].lstrip("@")
+                    username = tree.item(sel)['values'][0].lstrip('@')
                     self.scrape_queue.remove(username)
                 refresh_list()
-
+        
         def clear_queue():
             self.scrape_queue.clear()
             refresh_list()
-
+        
         tk.Button(
-            btn_frame,
-            text="Remove Selected",
-            command=remove_selected,
-            bg=Colors.BG_SECONDARY,
-            fg=Colors.TEXT,
-            font=("Segoe UI", 8),
-            relief="flat",
-            cursor="hand2",
-            padx=8,
+            btn_frame, text="Remove Selected", command=remove_selected,
+            bg=Colors.BG_SECONDARY, fg=Colors.TEXT, font=("Segoe UI", 8),
+            relief="flat", cursor="hand2", padx=8,
         ).pack(side="left")
-
+        
         tk.Button(
-            btn_frame,
-            text="Clear All",
-            command=clear_queue,
-            bg=Colors.BG_SECONDARY,
-            fg=Colors.ERROR,
-            font=("Segoe UI", 8),
-            relief="flat",
-            cursor="hand2",
-            padx=8,
+            btn_frame, text="Clear All", command=clear_queue,
+            bg=Colors.BG_SECONDARY, fg=Colors.ERROR, font=("Segoe UI", 8),
+            relief="flat", cursor="hand2", padx=8,
         ).pack(side="left", padx=(8, 0))
-
+        
         tk.Label(
             btn_frame,
             text=f"Queue: {len(self.scrape_queue.items)} users",
@@ -2922,33 +2714,33 @@ class TweetScraperApp:
         """Load and apply last used settings."""
         if not FEATURES_AVAILABLE or not self.settings_manager:
             return
-
+        
         s = self.settings_manager.settings
-
+        
         # Apply last values
         if s.last_username:
             self.username_entry.delete(0, tk.END)
             self.username_entry.insert(0, s.last_username)
-
+        
         if s.last_keywords:
             self.keyword_entry.delete(0, tk.END)
             self.keyword_entry.insert(0, s.last_keywords)
-
+        
         if s.last_mode:
             self.mode_var.set(s.last_mode)
             self.update_mode()
-
+        
         if s.last_start_date:
             self.start_entry.delete(0, tk.END)
             self.start_entry.insert(0, s.last_start_date)
-
+        
         if s.last_end_date:
             self.end_entry.delete(0, tk.END)
             self.end_entry.insert(0, s.last_end_date)
-
+        
         if s.last_export_format:
             self.format_var.set(s.last_export_format)
-
+        
         # Load filter settings
         if self.filters:
             self.filters.min_likes = s.min_likes
@@ -2961,7 +2753,7 @@ class TweetScraperApp:
         """Save current settings for next session."""
         if not FEATURES_AVAILABLE or not self.settings_manager:
             return
-
+        
         self.settings_manager.update(
             last_username=self.username_entry.get().strip(),
             last_keywords=self.keyword_entry.get().strip(),
@@ -2969,36 +2761,21 @@ class TweetScraperApp:
             last_start_date=self.start_entry.get().strip(),
             last_end_date=self.end_entry.get().strip(),
             last_export_format=self.format_var.get(),
-            last_scraping_method=(
-                self.scraping_method.get()
-                if hasattr(self, "scraping_method")
-                else "cookie"
-            ),
+            last_scraping_method=self.scraping_method.get() if hasattr(self, 'scraping_method') else "cookie",
         )
 
-    def _record_scrape_history(
-        self,
-        mode,
-        target,
-        tweet_count,
-        start_date,
-        end_date,
-        output_file,
-        status="completed",
-    ):
+    def _record_scrape_history(self, mode, target, tweet_count, start_date, end_date, output_file, status="completed"):
         """Record a completed scrape in history."""
         if not FEATURES_AVAILABLE or not self.history_manager:
             return
-
-        method = (
-            self.scraping_method.get() if hasattr(self, "scraping_method") else "cookie"
-        )
+        
+        method = self.scraping_method.get() if hasattr(self, 'scraping_method') else "cookie"
         cost = estimate_cost(method, tweet_count) if method != "cookie" else 0.0
-
+        
         duration = 0
         if self._scrape_start_time:
             duration = int(time_module.time() - self._scrape_start_time)
-
+        
         self.history_manager.create_record(
             mode=mode,
             target=target,
@@ -3501,11 +3278,11 @@ class TweetScraperApp:
                 messagebox.showerror(
                     "API Error",
                     "Could not initialize API scraper.\n\n"
-                    "Please check your API key configuration.",
+                    "Please check your API key configuration."
                 )
                 self._cleanup_after_scrape()
                 return
-
+            
             method_name = self.scraping_method.get()
             self.log(f"🔑 Starting API scrape ({method_name})...")
             threading.Thread(
@@ -3521,11 +3298,9 @@ class TweetScraperApp:
                 daemon=True,
             ).start()
 
-    def _run_api_scrape(
-        self, scraper, target, start, end, fmt, save_dir, break_settings
-    ):
+    def _run_api_scrape(self, scraper, target, start, end, fmt, save_dir, break_settings):
         """Run scraping using API provider instead of cookies."""
-
+        
         def progress_cb(msg):
             if isinstance(msg, str):
                 self.log(msg)
@@ -3540,18 +3315,18 @@ class TweetScraperApp:
         try:
             # Determine max results (large number for API, it will paginate)
             max_results = 10000
-
+            
             if target[0] == "batch":
                 users = target[1]
                 all_tweets = []
-
+                
                 for i, username in enumerate(users):
                     if self._should_stop():
                         progress_cb("🛑 Stop requested")
                         break
-
+                    
                     progress_cb(f"👤 User {i+1}/{len(users)}: @{username}")
-
+                    
                     try:
                         result = scraper.get_user_tweets(
                             username=username,
@@ -3562,16 +3337,14 @@ class TweetScraperApp:
                             progress_callback=progress_cb,
                             should_stop_callback=self._should_stop,
                         )
-
+                        
                         if result.success:
                             all_tweets.extend(result.tweets)
-                            progress_cb(
-                                f"✓ Got {len(result.tweets)} tweets for @{username}"
-                            )
+                            progress_cb(f"✓ Got {len(result.tweets)} tweets for @{username}")
                             progress_cb(len(all_tweets))
                         else:
                             progress_cb(f"⚠️ Error for @{username}: {result.error}")
-
+                            
                     except APIAuthenticationError as e:
                         progress_cb(f"🔑 Auth error: {e}")
                         self._handle_api_auth_error()
@@ -3579,18 +3352,15 @@ class TweetScraperApp:
                     except APIRateLimitError as e:
                         progress_cb(f"⏳ Rate limit hit. Waiting {e.retry_after}s...")
                         import time
-
                         time.sleep(e.retry_after)
                         continue
                     except Exception as e:
                         progress_cb(f"❌ Error: {e}")
                         continue
-
+                
                 # Save all tweets
                 if all_tweets:
-                    output_path = self._save_api_tweets(
-                        all_tweets, "batch", fmt, save_dir
-                    )
+                    output_path = self._save_api_tweets(all_tweets, "batch", fmt, save_dir)
                     progress_cb(f"✅ Saved {len(all_tweets)} tweets to {output_path}")
                     stats = scraper.get_usage_stats()
                     progress_cb(f"💰 Estimated cost: ${stats['estimated_cost']:.4f}")
@@ -3599,15 +3369,15 @@ class TweetScraperApp:
                         f"Scraped {len(all_tweets)} tweets!\n\n"
                         f"API calls: {stats['total_api_calls']}\n"
                         f"Est. cost: ${stats['estimated_cost']:.4f}\n\n"
-                        f"Saved to:\n{output_path}",
+                        f"Saved to:\n{output_path}"
                     )
                 else:
                     progress_cb("⚠️ No tweets collected")
-
+                    
             else:
                 # Single user or keyword search
                 _, user, kws = target
-
+                
                 if user:
                     progress_cb(f"👤 Scraping @{user}...")
                     result = scraper.get_user_tweets(
@@ -3621,9 +3391,7 @@ class TweetScraperApp:
                     )
                 else:
                     use_and = self.op_var.get() == "AND"
-                    progress_cb(
-                        f"🔍 Searching: {', '.join(kws)} ({'AND' if use_and else 'OR'})..."
-                    )
+                    progress_cb(f"🔍 Searching: {', '.join(kws)} ({'AND' if use_and else 'OR'})...")
                     result = scraper.search_tweets(
                         keywords=kws,
                         start_date=start,
@@ -3634,12 +3402,10 @@ class TweetScraperApp:
                         progress_callback=progress_cb,
                         should_stop_callback=self._should_stop,
                     )
-
+                
                 if result.success and result.tweets:
                     name = user or "_".join(kws[:2])
-                    output_path = self._save_api_tweets(
-                        result.tweets, name, fmt, save_dir
-                    )
+                    output_path = self._save_api_tweets(result.tweets, name, fmt, save_dir)
                     progress_cb(f"✅ Saved {len(result.tweets)} tweets")
                     stats = scraper.get_usage_stats()
                     progress_cb(f"💰 Estimated cost: ${stats['estimated_cost']:.4f}")
@@ -3648,17 +3414,15 @@ class TweetScraperApp:
                         f"Scraped {len(result.tweets)} tweets!\n\n"
                         f"API calls: {stats['total_api_calls']}\n"
                         f"Est. cost: ${stats['estimated_cost']:.4f}\n\n"
-                        f"Saved to:\n{output_path}",
+                        f"Saved to:\n{output_path}"
                     )
                 elif result.error:
                     progress_cb(f"❌ Error: {result.error}")
                     messagebox.showerror("Error", f"Scraping failed:\n{result.error}")
                 else:
                     progress_cb("⚠️ No tweets found matching criteria")
-                    messagebox.showinfo(
-                        "Complete", "No tweets found matching your criteria."
-                    )
-
+                    messagebox.showinfo("Complete", "No tweets found matching your criteria.")
+                    
         except APIAuthenticationError as e:
             self.log(f"🔑 Authentication failed: {e}")
             self._handle_api_auth_error()
@@ -3666,7 +3430,7 @@ class TweetScraperApp:
             self.log(f"⏳ Rate limited: {e}")
             messagebox.showwarning(
                 "Rate Limited",
-                f"API rate limit exceeded.\n\nPlease wait {e.retry_after // 60} minutes and try again.",
+                f"API rate limit exceeded.\n\nPlease wait {e.retry_after // 60} minutes and try again."
             )
         except Exception as e:
             self.log(f"❌ Error: {e}")
@@ -3678,43 +3442,35 @@ class TweetScraperApp:
         """Save API-scraped tweets to file."""
         import pandas as pd
         from datetime import datetime as dt
-
+        
         # Ensure save directory exists
         os.makedirs(save_dir, exist_ok=True)
-
+        
         # Create filename
         timestamp = dt.now().strftime("%Y%m%d_%H%M%S")
         safe_name = "".join(c if c.isalnum() or c in "_-" else "_" for c in name)
         ext = "xlsx" if fmt == "excel" else "csv"
         filename = f"{safe_name}_{timestamp}_api.{ext}"
         output_path = os.path.join(save_dir, filename)
-
+        
         # Convert tweets to dataframe
         data = [tweet.to_dict() for tweet in tweets]
         df = pd.DataFrame(data)
-
+        
         # Reorder columns to match cookie-based output
         column_order = [
-            "date",
-            "username",
-            "display_name",
-            "text",
-            "retweets",
-            "likes",
-            "replies",
-            "quotes",
-            "views",
-            "tweet_id",
-            "tweet_url",
+            "date", "username", "display_name", "text",
+            "retweets", "likes", "replies", "quotes", "views",
+            "tweet_id", "tweet_url"
         ]
         df = df[[c for c in column_order if c in df.columns]]
-
+        
         # Save
         if fmt == "excel":
             df.to_excel(output_path, index=False, engine="openpyxl")
         else:
             df.to_csv(output_path, index=False, encoding="utf-8-sig")
-
+        
         return output_path
 
     def _handle_api_auth_error(self):
@@ -3722,7 +3478,7 @@ class TweetScraperApp:
         result = messagebox.askyesno(
             "Authentication Failed",
             "API authentication failed. Your API key may be invalid or expired.\n\n"
-            "Would you like to update your API key now?",
+            "Would you like to update your API key now?"
         )
         if result:
             self.show_api_key_dialog()
@@ -3856,8 +3612,12 @@ Excel, CSV, JSON, SQLite, HTML, Markdown
 • No tweets → Check username/date range
 
 
+📞 NEED HELP? CONTACT US
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Made with ❤️ by OJ | v1.4.0 | Jan 2025
+Use the buttons below to reach out!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Made with ❤️ by OJ | v1.2.0 | Jan 2026
 """
 
         text_frame = tk.Frame(main, bg=Colors.BG)
@@ -3884,8 +3644,9 @@ Made with ❤️ by OJ | v1.4.0 | Jan 2025
         text.insert("1.0", help_text)
         text.config(state="disabled")
 
+        # Row 1: Documentation & Video buttons
         btn_frame = tk.Frame(main, bg=Colors.BG)
-        btn_frame.pack(fill="x", pady=(15, 0))
+        btn_frame.pack(fill="x", pady=(15, 5))
 
         # PDF Download button
         tk.Button(
@@ -3899,6 +3660,8 @@ Made with ❤️ by OJ | v1.4.0 | Jan 2025
             cursor="hand2",
             padx=12,
             pady=6,
+            activebackground="#16a34a",
+            activeforeground="white",
         ).pack(side="left", padx=(0, 8))
 
         tk.Button(
@@ -3912,6 +3675,8 @@ Made with ❤️ by OJ | v1.4.0 | Jan 2025
             cursor="hand2",
             padx=12,
             pady=6,
+            activebackground=Colors.PRIMARY_DARK,
+            activeforeground="white",
         ).pack(side="left", padx=(0, 8))
 
         tk.Button(
@@ -3925,6 +3690,8 @@ Made with ❤️ by OJ | v1.4.0 | Jan 2025
             cursor="hand2",
             padx=12,
             pady=6,
+            activebackground=Colors.PRIMARY_DARK,
+            activeforeground="white",
         ).pack(side="left")
 
         tk.Button(
@@ -3938,16 +3705,78 @@ Made with ❤️ by OJ | v1.4.0 | Jan 2025
             cursor="hand2",
             padx=12,
             pady=6,
+            activebackground=Colors.BORDER,
+            activeforeground=Colors.TEXT,
         ).pack(side="right")
+        
+        # Row 2: Contact/Social links
+        contact_frame = tk.Frame(main, bg=Colors.BG)
+        contact_frame.pack(fill="x", pady=(5, 0))
+        
+        tk.Label(
+            contact_frame,
+            text="📞 Contact & Support:",
+            font=("Segoe UI", 9),
+            bg=Colors.BG,
+            fg=Colors.TEXT_SECONDARY,
+        ).pack(side="left", padx=(0, 10))
+        
+        # WhatsApp button
+        tk.Button(
+            contact_frame,
+            text="💬 WhatsApp",
+            command=lambda: webbrowser.open("https://wa.me/2348088666352"),
+            bg="#25D366",  # WhatsApp green
+            fg="white",
+            font=("Segoe UI", 9),
+            relief="flat",
+            cursor="hand2",
+            padx=10,
+            pady=4,
+            activebackground="#128C7E",
+            activeforeground="white",
+        ).pack(side="left", padx=(0, 6))
+        
+        # Twitter button
+        tk.Button(
+            contact_frame,
+            text="🐦 Twitter",
+            command=lambda: webbrowser.open("https://twitter.com/datacreatorhub"),
+            bg="#1DA1F2",  # Twitter blue
+            fg="white",
+            font=("Segoe UI", 9),
+            relief="flat",
+            cursor="hand2",
+            padx=10,
+            pady=4,
+            activebackground="#0c85d0",
+            activeforeground="white",
+        ).pack(side="left", padx=(0, 6))
+        
+        # GitHub button
+        tk.Button(
+            contact_frame,
+            text="🐙 GitHub",
+            command=lambda: webbrowser.open("https://github.com/OJTheCreator"),
+            bg="#333333",  # GitHub dark
+            fg="white",
+            font=("Segoe UI", 9),
+            relief="flat",
+            cursor="hand2",
+            padx=10,
+            pady=4,
+            activebackground="#24292e",
+            activeforeground="white",
+        ).pack(side="left")
 
     def _toggle_dark_mode(self):
         """Toggle dark mode and apply immediately."""
         # Toggle the state
         is_dark = not Colors.is_dark_mode()
         Colors.set_dark_mode(is_dark)
-
+        
         # Update button icon
-        if hasattr(self, "dark_mode_btn"):
+        if hasattr(self, 'dark_mode_btn'):
             self.dark_mode_btn.config(
                 text="☀️" if is_dark else "🌙",
                 bg=Colors.BG,
@@ -3955,51 +3784,51 @@ Made with ❤️ by OJ | v1.4.0 | Jan 2025
                 activebackground=Colors.BG_SECONDARY,
                 activeforeground=Colors.TEXT,
             )
-
+        
         # Save preference
         if FEATURES_AVAILABLE and self.app_settings:
             self.app_settings.dark_mode = is_dark
             save_app_settings(self.app_settings)
-
+        
         # Apply theme to entire app
         self._apply_theme()
-
+    
     def _apply_theme(self):
         """Apply current theme colors to all widgets."""
         # Update root window
         self.root.configure(bg=Colors.BG)
-
+        
         # Update ttk styles first
         self.setup_styles()
-
+        
         # Recursively update all tk widgets
         self._update_widget_colors(self.root)
-
+        
         # Update specific known widgets that need special handling
         self._update_special_widgets()
-
+    
     def _update_special_widgets(self):
         """Update specific widgets that need special color handling."""
         # Update log text areas
-        if hasattr(self, "log_text"):
+        if hasattr(self, 'log_text'):
             self.log_text.configure(
-                bg=Colors.BG_SECONDARY,
+                bg=Colors.BG_SECONDARY, 
                 fg=Colors.TEXT,
                 insertbackground=Colors.TEXT,
                 selectbackground=Colors.PRIMARY,
                 selectforeground="white",
             )
-        if hasattr(self, "links_log_text"):
+        if hasattr(self, 'links_log_text'):
             self.links_log_text.configure(
-                bg=Colors.BG_SECONDARY,
+                bg=Colors.BG_SECONDARY, 
                 fg=Colors.TEXT,
                 insertbackground=Colors.TEXT,
                 selectbackground=Colors.PRIMARY,
                 selectforeground="white",
             )
-
+        
         # Update notebook tabs
-        if hasattr(self, "notebook"):
+        if hasattr(self, 'notebook'):
             style = ttk.Style()
             style.configure("TNotebook", background=Colors.BG)
             style.configure(
@@ -4012,67 +3841,52 @@ Made with ❤️ by OJ | v1.4.0 | Jan 2025
                 background=[("selected", Colors.BG)],
                 foreground=[("selected", Colors.PRIMARY)],
             )
-
+    
     def _update_widget_colors(self, widget):
         """Recursively update widget colors for theme change."""
         try:
             widget_class = widget.winfo_class()
-
+            
             # Handle different widget types
-            if widget_class in ("Frame", "Labelframe"):
+            if widget_class in ('Frame', 'Labelframe'):
                 try:
-                    current_bg = widget.cget("bg")
+                    current_bg = widget.cget('bg')
                     # Keep primary-colored frames (like logo background)
-                    if current_bg in ("#2563eb", "#3b82f6", "#1d4ed8"):
+                    if current_bg in ('#2563eb', '#3b82f6', '#1d4ed8'):
                         widget.configure(bg=Colors.PRIMARY)
                     else:
                         widget.configure(bg=Colors.BG)
                 except:
                     widget.configure(bg=Colors.BG)
-
-            elif widget_class == "Label":
+                    
+            elif widget_class == 'Label':
                 try:
-                    current_bg = widget.cget("bg")
-                    current_fg = widget.cget("fg")
+                    current_bg = widget.cget('bg')
+                    current_fg = widget.cget('fg')
                     # Keep labels with white text on colored backgrounds
-                    if current_fg == "white" or current_bg in (
-                        "#2563eb",
-                        "#3b82f6",
-                        "#1d4ed8",
-                    ):
-                        widget.configure(bg=Colors.PRIMARY, fg="white")
-                    elif current_fg in ("#64748b", "#a1a1b5"):  # Secondary text
+                    if current_fg == 'white' or current_bg in ('#2563eb', '#3b82f6', '#1d4ed8'):
+                        widget.configure(bg=Colors.PRIMARY, fg='white')
+                    elif current_fg in ('#64748b', '#a1a1b5'):  # Secondary text
                         widget.configure(bg=Colors.BG, fg=Colors.TEXT_SECONDARY)
                     else:
                         widget.configure(bg=Colors.BG, fg=Colors.TEXT)
                 except:
                     pass
-
-            elif widget_class == "Button":
+                    
+            elif widget_class == 'Button':
                 try:
-                    current_bg = widget.cget("bg")
-                    current_fg = widget.cget("fg")
-
+                    current_bg = widget.cget('bg')
+                    current_fg = widget.cget('fg')
+                    
                     # Primary buttons (blue)
-                    if (
-                        current_bg in ("#2563eb", "#1d4ed8", "#3b82f6")
-                        or current_fg == "white"
-                    ):
-                        if current_bg in (
-                            "#22c55e",
-                            "#4ade80",
-                            "#16a34a",
-                        ):  # Green/success
+                    if current_bg in ('#2563eb', '#1d4ed8', '#3b82f6') or current_fg == 'white':
+                        if current_bg in ('#22c55e', '#4ade80', '#16a34a'):  # Green/success
                             widget.configure(
                                 bg=Colors.SUCCESS,
                                 activebackground="#16a34a",
                                 activeforeground="white",
                             )
-                        elif current_bg in (
-                            "#ef4444",
-                            "#f87171",
-                            "#dc2626",
-                        ):  # Red/error
+                        elif current_bg in ('#ef4444', '#f87171', '#dc2626'):  # Red/error
                             widget.configure(
                                 bg=Colors.ERROR,
                                 activebackground="#dc2626",
@@ -4087,19 +3901,15 @@ Made with ❤️ by OJ | v1.4.0 | Jan 2025
                     else:
                         # Secondary/ghost buttons
                         widget.configure(
-                            bg=(
-                                Colors.BG_SECONDARY
-                                if current_bg != Colors.BG
-                                else Colors.BG
-                            ),
+                            bg=Colors.BG_SECONDARY if current_bg != Colors.BG else Colors.BG,
                             fg=Colors.TEXT,
                             activebackground=Colors.BORDER,
                             activeforeground=Colors.TEXT,
                         )
                 except:
                     pass
-
-            elif widget_class == "Text":
+                    
+            elif widget_class == 'Text':
                 try:
                     widget.configure(
                         bg=Colors.BG_SECONDARY,
@@ -4110,8 +3920,8 @@ Made with ❤️ by OJ | v1.4.0 | Jan 2025
                     )
                 except:
                     pass
-
-            elif widget_class == "Entry":
+                    
+            elif widget_class == 'Entry':
                 try:
                     widget.configure(
                         bg=Colors.BG_SECONDARY,
@@ -4124,8 +3934,8 @@ Made with ❤️ by OJ | v1.4.0 | Jan 2025
                     )
                 except:
                     pass
-
-            elif widget_class == "Listbox":
+                    
+            elif widget_class == 'Listbox':
                 try:
                     widget.configure(
                         bg=Colors.BG_SECONDARY,
@@ -4137,16 +3947,16 @@ Made with ❤️ by OJ | v1.4.0 | Jan 2025
                     )
                 except:
                     pass
-
-            elif widget_class == "Canvas":
+                    
+            elif widget_class == 'Canvas':
                 try:
                     widget.configure(bg=Colors.BG)
                 except:
                     pass
-
+                    
         except Exception:
             pass
-
+        
         # Process children recursively
         try:
             for child in widget.winfo_children():
@@ -4160,18 +3970,17 @@ Made with ❤️ by OJ | v1.4.0 | Jan 2025
             defaultextension=".pdf",
             filetypes=[("PDF files", "*.pdf"), ("Text files", "*.txt")],
             initialfile="Chi_Tweet_Scraper_Documentation.pdf",
-            title="Save Documentation",
+            title="Save Documentation"
         )
-
+        
         if not filepath:
             return
-
+        
         # Documentation content - COMPREHENSIVE VERSION
         doc_sections = [
-            ("Chi Tweet Scraper", "Complete User Documentation - Version 1.4.0"),
-            (
-                "1. INTRODUCTION",
-                """Chi Tweet Scraper is a professional desktop application designed for collecting and analyzing data from Twitter/X. Whether you're a researcher, marketer, data analyst, or developer, this tool provides powerful capabilities for gathering tweet data efficiently.
+            ("Chi Tweet Scraper", "Complete User Documentation - Version 1.2.0"),
+            
+            ("1. INTRODUCTION", """Chi Tweet Scraper is a professional desktop application designed for collecting and analyzing data from Twitter/X. Whether you're a researcher, marketer, data analyst, or developer, this tool provides powerful capabilities for gathering tweet data efficiently.
 
 KEY FEATURES:
 • Multiple scraping methods: Free cookie-based or paid API-based
@@ -4189,11 +3998,9 @@ USE CASES:
 • Content curation and trend tracking
 • Sentiment analysis data collection
 • Historical tweet archival
-• Influencer analytics""",
-            ),
-            (
-                "2. SYSTEM REQUIREMENTS",
-                """MINIMUM REQUIREMENTS:
+• Influencer analytics"""),
+            
+            ("2. SYSTEM REQUIREMENTS", """MINIMUM REQUIREMENTS:
 • Operating System: Windows 10/11, macOS 10.14+, or Linux (Ubuntu 18.04+)
 • Processor: 1 GHz or faster
 • RAM: 4 GB minimum
@@ -4210,11 +4017,9 @@ SOFTWARE DEPENDENCIES (if running from source):
 • Python 3.8 or higher
 • pip (Python package manager)
 • Required packages: twikit, pandas, openpyxl, Pillow, requests, httpx
-• Optional: reportlab (for PDF documentation)""",
-            ),
-            (
-                "3. INSTALLATION",
-                """OPTION A: WINDOWS EXECUTABLE (Recommended for most users)
+• Optional: reportlab (for PDF documentation)"""),
+            
+            ("3. INSTALLATION", """OPTION A: WINDOWS EXECUTABLE (Recommended for most users)
 
 Step 1: Download
 • Download the latest release (.zip file) from the official source
@@ -4251,11 +4056,9 @@ Step 3: Install Dependencies
 
 Step 4: Run the Application
 • Run: python -m src.gui
-• Or: python src/gui.py""",
-            ),
-            (
-                "4. ANTIVIRUS WHITELIST GUIDE",
-                """⚠️ IMPORTANT: READ THIS SECTION CAREFULLY ⚠️
+• Or: python src/gui.py"""),
+            
+            ("4. ANTIVIRUS WHITELIST GUIDE", """⚠️ IMPORTANT: READ THIS SECTION CAREFULLY ⚠️
 
 The application may be flagged by antivirus software as a potential threat. This is a FALSE POSITIVE - the application is completely safe.
 
@@ -4334,11 +4137,9 @@ IF YOUR ANTIVIRUS DELETES THE APP:
 1. First, add the exclusion as described above
 2. Check your antivirus quarantine and restore the file
 3. Re-extract the application from the original .zip
-4. If issues persist, temporarily disable real-time protection during extraction""",
-            ),
-            (
-                "5. COOKIE-BASED AUTHENTICATION",
-                """Cookie-based scraping is FREE and uses your Twitter login session. Here's how to set it up:
+4. If issues persist, temporarily disable real-time protection during extraction"""),
+
+            ("5. COOKIE-BASED AUTHENTICATION", """Cookie-based scraping is FREE and uses your Twitter login session. Here's how to set it up:
 
 WHAT YOU'LL NEED:
 • A Twitter/X account (logged in via browser)
@@ -4397,11 +4198,9 @@ COOKIE EXPIRATION & REFRESH:
 TIPS:
 • Keep your browser logged into Twitter for easy cookie refresh
 • Don't log out of Twitter in your browser (this invalidates cookies)
-• If you see "Cookie Expired" errors, get fresh cookies immediately""",
-            ),
-            (
-                "6. API-BASED AUTHENTICATION",
-                """API-based scraping uses third-party services for more reliable, high-volume data collection. It's paid but offers several advantages.
+• If you see "Cookie Expired" errors, get fresh cookies immediately"""),
+
+            ("6. API-BASED AUTHENTICATION", """API-based scraping uses third-party services for more reliable, high-volume data collection. It's paid but offers several advantages.
 
 ADVANTAGES OF API METHOD:
 • No cookie management or expiration issues
@@ -4457,11 +4256,9 @@ TIPS:
 • Start with a small scrape to test your setup
 • Use filters to reduce costs (only get tweets you need)
 • Monitor your API balance regularly
-• Set up billing alerts on the provider's website""",
-            ),
-            (
-                "7. SCRAPING MODES DETAILED GUIDE",
-                """Chi Tweet Scraper offers four different scraping modes to suit various needs:
+• Set up billing alerts on the provider's website"""),
+
+            ("7. SCRAPING MODES DETAILED GUIDE", """Chi Tweet Scraper offers four different scraping modes to suit various needs:
 
 ═══════════════════════════════════════════
 MODE 1: USERNAME SCRAPING
@@ -4575,11 +4372,9 @@ Data collected per tweet:
 Best for:
 • Analyzing specific viral tweets
 • Detailed engagement analysis
-• Content verification""",
-            ),
-            (
-                "8. EXPORT FORMATS GUIDE",
-                """Chi Tweet Scraper supports multiple export formats. Choose based on your needs:
+• Content verification"""),
+
+            ("8. EXPORT FORMATS GUIDE", """Chi Tweet Scraper supports multiple export formats. Choose based on your needs:
 
 ═══════════════════════════════════════════
 EXCEL (.xlsx) - RECOMMENDED FOR MOST USERS
@@ -4685,11 +4480,9 @@ Every export includes these columns:
 • quote_count: Number of quote tweets
 • view_count: Number of views (if available)
 • tweet_id: Unique tweet identifier
-• tweet_url: Direct link to tweet""",
-            ),
-            (
-                "9. FEATURES & SETTINGS",
-                """═══════════════════════════════════════════
+• tweet_url: Direct link to tweet"""),
+
+            ("9. FEATURES & SETTINGS", """═══════════════════════════════════════════
 🌙 DARK MODE
 ═══════════════════════════════════════════
 Toggle between light and dark themes:
@@ -4773,11 +4566,9 @@ Your preferences are saved:
 • Filter settings
 • Export format preference
 • Dark mode preference
-• API keys (encrypted)""",
-            ),
-            (
-                "10. TROUBLESHOOTING",
-                """═══════════════════════════════════════════
+• API keys (encrypted)"""),
+
+            ("10. TROUBLESHOOTING", """═══════════════════════════════════════════
 COMMON ISSUES AND SOLUTIONS
 ═══════════════════════════════════════════
 
@@ -4907,11 +4698,9 @@ Solution:
 2. Click "Test" to check validity
 3. Check your balance on the provider website
 4. Generate a new key if needed
-5. Contact provider support if issues persist""",
-            ),
-            (
-                "11. FREQUENTLY ASKED QUESTIONS",
-                """Q: Is Chi Tweet Scraper safe to use?
+5. Contact provider support if issues persist"""),
+
+            ("11. FREQUENTLY ASKED QUESTIONS", """Q: Is Chi Tweet Scraper safe to use?
 A: Yes, absolutely. The antivirus warnings are false positives caused by the PyInstaller packaging method. The app is open-source and contains no malware.
 
 Q: Is scraping tweets legal?
@@ -4954,11 +4743,9 @@ Q: What languages are supported?
 A: The app can scrape tweets in any language. Exports use UTF-8 encoding to support all characters including emojis.
 
 Q: How accurate is the engagement data?
-A: Engagement metrics (likes, retweets, etc.) reflect the values at the time of scraping. These numbers change over time as tweets receive more engagement.""",
-            ),
-            (
-                "SUPPORT & RESOURCES",
-                """═══════════════════════════════════════════
+A: Engagement metrics (likes, retweets, etc.) reflect the values at the time of scraping. These numbers change over time as tweets receive more engagement."""),
+
+            ("SUPPORT & RESOURCES", """═══════════════════════════════════════════
 VIDEO TUTORIALS
 ═══════════════════════════════════════════
 Getting Started Guide:
@@ -4993,7 +4780,7 @@ Logs: [App Folder]/logs/
 ═══════════════════════════════════════════
 VERSION HISTORY
 ═══════════════════════════════════════════
-v1.4.0 (January 2025)
+v1.2.0 (January 2026)
 • Added dark mode with live switching
 • Added 6 export formats (JSON, SQLite, HTML, MD)
 • Improved UI/UX
@@ -5017,46 +4804,41 @@ Built with: Python, Tkinter, Twikit
 
 Thank you for using Chi Tweet Scraper!
 
-Made with ❤️ by OJ | January 2025""",
-            ),
+Made with ❤️ by OJ | January 2026"""),
         ]
-
+        
         # Try to create PDF, fallback to text
-        if filepath.endswith(".pdf"):
+        if filepath.endswith('.pdf'):
             try:
                 self._create_pdf_documentation(filepath, doc_sections)
-                messagebox.showinfo(
-                    "Success", f"PDF Documentation saved to:\n{filepath}"
-                )
+                messagebox.showinfo("Success", f"PDF Documentation saved to:\n{filepath}")
                 webbrowser.open(filepath)
                 return
             except ImportError:
                 # Fallback to text if reportlab not installed
-                filepath = filepath.replace(".pdf", ".txt")
+                filepath = filepath.replace('.pdf', '.txt')
                 messagebox.showinfo(
-                    "Note",
+                    "Note", 
                     "PDF library not installed. Saving as text file instead.\n\n"
-                    "To enable PDF: pip install reportlab",
+                    "To enable PDF: pip install reportlab"
                 )
             except Exception as e:
-                filepath = filepath.replace(".pdf", ".txt")
-                messagebox.showwarning(
-                    "PDF Error", f"Could not create PDF: {e}\n\nSaving as text instead."
-                )
-
+                filepath = filepath.replace('.pdf', '.txt')
+                messagebox.showwarning("PDF Error", f"Could not create PDF: {e}\n\nSaving as text instead.")
+        
         # Create text file
         try:
-            with open(filepath, "w", encoding="utf-8") as f:
+            with open(filepath, 'w', encoding='utf-8') as f:
                 f.write("=" * 70 + "\n")
                 f.write("CHI TWEET SCRAPER - COMPLETE USER DOCUMENTATION\n")
-                f.write("Version 1.4.0\n")
+                f.write("Version 1.2.0\n")
                 f.write("=" * 70 + "\n\n")
-
+                
                 for title, content in doc_sections[1:]:  # Skip the header
                     f.write(f"\n{title}\n")
                     f.write("-" * len(title) + "\n")
                     f.write(content + "\n\n")
-
+            
             messagebox.showinfo("Success", f"Documentation saved to:\n{filepath}")
             webbrowser.open(filepath)
         except Exception as e:
@@ -5070,74 +4852,72 @@ Made with ❤️ by OJ | January 2025""",
         from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
         from reportlab.lib.colors import HexColor
         from reportlab.lib.enums import TA_CENTER
-
+        
         doc = SimpleDocTemplate(
-            filepath,
+            filepath, 
             pagesize=letter,
-            topMargin=0.75 * inch,
-            bottomMargin=0.75 * inch,
-            leftMargin=0.75 * inch,
-            rightMargin=0.75 * inch,
+            topMargin=0.75*inch,
+            bottomMargin=0.75*inch,
+            leftMargin=0.75*inch,
+            rightMargin=0.75*inch
         )
-
+        
         styles = getSampleStyleSheet()
-
+        
         # Custom styles
         title_style = ParagraphStyle(
-            "CustomTitle",
-            parent=styles["Heading1"],
+            'CustomTitle',
+            parent=styles['Heading1'],
             fontSize=24,
-            textColor=HexColor("#2563eb"),
+            textColor=HexColor('#2563eb'),
             spaceAfter=6,
-            alignment=TA_CENTER,
+            alignment=TA_CENTER
         )
         subtitle_style = ParagraphStyle(
-            "Subtitle",
-            parent=styles["Normal"],
+            'Subtitle',
+            parent=styles['Normal'],
             fontSize=12,
-            textColor=HexColor("#64748b"),
+            textColor=HexColor('#64748b'),
             spaceAfter=30,
-            alignment=TA_CENTER,
+            alignment=TA_CENTER
         )
         heading_style = ParagraphStyle(
-            "CustomHeading",
-            parent=styles["Heading2"],
+            'CustomHeading',
+            parent=styles['Heading2'],
             fontSize=14,
-            textColor=HexColor("#1e293b"),
+            textColor=HexColor('#1e293b'),
             spaceBefore=20,
             spaceAfter=10,
-            borderColor=HexColor("#2563eb"),
+            borderColor=HexColor('#2563eb'),
             borderWidth=0,
-            borderPadding=0,
+            borderPadding=0
         )
         body_style = ParagraphStyle(
-            "CustomBody",
-            parent=styles["Normal"],
+            'CustomBody',
+            parent=styles['Normal'],
             fontSize=10,
             leading=14,
-            spaceAfter=12,
+            spaceAfter=12
         )
-
+        
         story = []
-
+        
         # Title page
-        story.append(Spacer(1, 1.5 * inch))
+        story.append(Spacer(1, 1.5*inch))
         story.append(Paragraph("🐦 Chi Tweet Scraper", title_style))
         story.append(Paragraph(sections[0][1], subtitle_style))
-        story.append(Spacer(1, 0.5 * inch))
-        story.append(
-            Paragraph("Professional Twitter/X Data Collection Tool", body_style)
-        )
+        story.append(Spacer(1, 0.5*inch))
+        story.append(Paragraph("Professional Twitter/X Data Collection Tool", body_style))
         story.append(PageBreak())
-
+        
         # Content sections
         for title, content in sections[1:]:
             story.append(Paragraph(title, heading_style))
             # Convert line breaks to <br/>
-            content_html = content.replace("\n", "<br/>")
+            content_html = content.replace('\n', '<br/>')
             story.append(Paragraph(content_html, body_style))
             story.append(Spacer(1, 10))
-
+        
         doc.build(story)
 
 
