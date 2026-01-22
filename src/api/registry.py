@@ -28,20 +28,22 @@ _SCRAPER_REGISTRY: Dict[APIProviderType, Type[BaseAPIScraper]] = {
 # Provider display information
 PROVIDER_INFO = {
     APIProviderType.TWEETX: {
-        "name": "TweetX API",
-        "description": "TwitterXAPI.com - Pay-as-you-go Twitter data access",
-        "pricing_display": "$0.14 per 1,000 tweets",
+        "name": "TweetX",
+        "description": "TwexAPI.io - Pay-as-you-go Twitter data access",
+        "pricing_display": "$0.14/1k",
         "pricing_type": "Pay-as-you-go",
-        "website": "https://twitterxapi.com",
+        "website": "https://twexapi.io",
+        "signup_url": "https://twexapi.io",
         "auth_type": "API Key (Bearer Token)",
         "features": ["Search tweets", "User timeline", "Date filtering", "Pagination"],
     },
     APIProviderType.TWITTERAPI_IO: {
         "name": "TwitterAPI.io",
         "description": "Enterprise-grade Twitter data API",
-        "pricing_display": "$0.15 per 1,000 tweets",
+        "pricing_display": "$0.15/1k",
         "pricing_type": "Pay-as-you-go",
         "website": "https://twitterapi.io",
+        "signup_url": "https://twitterapi.io/signup",
         "auth_type": "API Key",
         "features": ["Search tweets", "User timeline", "Real-time data", "High volume"],
         "available": False,  # Not yet implemented
@@ -49,9 +51,10 @@ PROVIDER_INFO = {
     APIProviderType.OFFICIAL_X: {
         "name": "Official X API",
         "description": "Official Twitter/X API v2",
-        "pricing_display": "$100-$5,000/month",
+        "pricing_display": "$100+/mo",
         "pricing_type": "Monthly subscription",
         "website": "https://developer.twitter.com",
+        "signup_url": "https://developer.twitter.com/en/portal/dashboard",
         "auth_type": "Bearer Token + OAuth",
         "features": ["Full API access", "Streaming", "Premium endpoints"],
         "available": False,  # Not yet implemented
