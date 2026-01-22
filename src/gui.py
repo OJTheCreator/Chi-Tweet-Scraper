@@ -240,20 +240,209 @@ class TweetScraperApp:
             background=[("selected", Colors.BG)],
             foreground=[("selected", Colors.PRIMARY)],
         )
-        style.configure("TEntry", padding=6)
-        style.configure("TCombobox", padding=4)
+
+        # Entry styling
+        style.configure(
+            "TEntry",
+            padding=6,
+            fieldbackground=Colors.BG_SECONDARY,
+            foreground=Colors.TEXT,
+            insertcolor=Colors.TEXT,
+        )
+        style.map(
+            "TEntry",
+            fieldbackground=[
+                ("focus", Colors.BG_SECONDARY),
+                ("!focus", Colors.BG_SECONDARY),
+            ],
+            foreground=[("focus", Colors.TEXT), ("!focus", Colors.TEXT)],
+        )
+
+        # Combobox styling
+        style.configure(
+            "TCombobox",
+            padding=4,
+            fieldbackground=Colors.BG_SECONDARY,
+            background=Colors.BG_SECONDARY,
+            foreground=Colors.TEXT,
+            arrowcolor=Colors.TEXT,
+            selectbackground=Colors.PRIMARY,
+            selectforeground="white",
+        )
+        style.map(
+            "TCombobox",
+            fieldbackground=[
+                ("readonly", Colors.BG_SECONDARY),
+                ("focus", Colors.BG_SECONDARY),
+            ],
+            background=[
+                ("active", Colors.BG_SECONDARY),
+                ("pressed", Colors.BG_SECONDARY),
+            ],
+            foreground=[("readonly", Colors.TEXT), ("focus", Colors.TEXT)],
+            arrowcolor=[("disabled", Colors.TEXT_SECONDARY)],
+            selectbackground=[("focus", Colors.PRIMARY)],
+            selectforeground=[("focus", "white")],
+        )
+
+        # Checkbutton styling
         style.configure(
             "TCheckbutton",
             background=Colors.BG,
             foreground=Colors.TEXT,
             font=("Segoe UI", 9),
+            focuscolor=Colors.BG,
         )
+        style.map(
+            "TCheckbutton",
+            background=[("active", Colors.BG), ("pressed", Colors.BG)],
+            foreground=[("active", Colors.TEXT), ("disabled", Colors.TEXT_SECONDARY)],
+            indicatorcolor=[
+                ("selected", Colors.PRIMARY),
+                ("!selected", Colors.BG_SECONDARY),
+            ],
+        )
+
+        # Radiobutton styling
+        style.configure(
+            "TRadiobutton",
+            background=Colors.BG,
+            foreground=Colors.TEXT,
+            font=("Segoe UI", 9),
+            focuscolor=Colors.BG,
+        )
+        style.map(
+            "TRadiobutton",
+            background=[("active", Colors.BG), ("pressed", Colors.BG)],
+            foreground=[("active", Colors.TEXT)],
+        )
+
+        # Progress bar
         style.configure(
             "Blue.Horizontal.TProgressbar",
             background=Colors.PRIMARY,
             troughcolor=Colors.BORDER,
         )
-        style.configure("TSpinbox", padding=4)
+
+        # Spinbox styling
+        style.configure(
+            "TSpinbox",
+            padding=4,
+            fieldbackground=Colors.BG_SECONDARY,
+            background=Colors.BG_SECONDARY,
+            foreground=Colors.TEXT,
+            arrowcolor=Colors.TEXT,
+            insertcolor=Colors.TEXT,
+        )
+        style.map(
+            "TSpinbox",
+            fieldbackground=[("focus", Colors.BG_SECONDARY)],
+            foreground=[("focus", Colors.TEXT)],
+            arrowcolor=[("disabled", Colors.TEXT_SECONDARY)],
+        )
+
+        # Scrollbar styling
+        style.configure(
+            "Vertical.TScrollbar",
+            background=Colors.BG_SECONDARY,
+            troughcolor=Colors.BG,
+            arrowcolor=Colors.TEXT_SECONDARY,
+            bordercolor=Colors.BORDER,
+        )
+        style.map(
+            "Vertical.TScrollbar",
+            background=[("active", Colors.BORDER), ("pressed", Colors.PRIMARY)],
+        )
+
+        # Frame styling
+        style.configure("TFrame", background=Colors.BG)
+        style.configure("TLabelframe", background=Colors.BG, foreground=Colors.TEXT)
+        style.configure(
+            "TLabelframe.Label", background=Colors.BG, foreground=Colors.TEXT
+        )
+
+        # Button styling (for ttk buttons if used)
+        style.configure(
+            "TButton",
+            background=Colors.BG_SECONDARY,
+            foreground=Colors.TEXT,
+            padding=[10, 5],
+            font=("Segoe UI", 9),
+        )
+        style.map(
+            "TButton",
+            background=[("active", Colors.BORDER), ("pressed", Colors.PRIMARY)],
+            foreground=[("active", Colors.TEXT), ("pressed", "white")],
+        )
+
+    def _create_button(self, parent, text, command, style="secondary", **kwargs):
+        """Create a properly themed button.
+
+        Styles: 'primary', 'secondary', 'success', 'error', 'ghost'
+        """
+        styles = {
+            "primary": {
+                "bg": Colors.PRIMARY,
+                "fg": "white",
+                "activebackground": Colors.PRIMARY_DARK,
+                "activeforeground": "white",
+            },
+            "secondary": {
+                "bg": Colors.BG_SECONDARY,
+                "fg": Colors.TEXT,
+                "activebackground": Colors.BORDER,
+                "activeforeground": Colors.TEXT,
+            },
+            "success": {
+                "bg": Colors.SUCCESS,
+                "fg": "white",
+                "activebackground": "#16a34a",  # Darker green
+                "activeforeground": "white",
+            },
+            "error": {
+                "bg": Colors.ERROR,
+                "fg": "white",
+                "activebackground": "#dc2626",  # Darker red
+                "activeforeground": "white",
+            },
+            "ghost": {
+                "bg": Colors.BG,
+                "fg": Colors.TEXT,
+                "activebackground": Colors.BG_SECONDARY,
+                "activeforeground": Colors.TEXT,
+            },
+        }
+
+        s = styles.get(style, styles["secondary"])
+
+        btn = tk.Button(
+            parent,
+            text=text,
+            command=command,
+            bg=s["bg"],
+            fg=s["fg"],
+            activebackground=s["activebackground"],
+            activeforeground=s["activeforeground"],
+            font=kwargs.get("font", ("Segoe UI", 9)),
+            relief="flat",
+            bd=0,
+            cursor="hand2",
+            padx=kwargs.get("padx", 12),
+            pady=kwargs.get("pady", 6),
+            width=kwargs.get("width", None),
+        )
+
+        # Add hover effect
+        def on_enter(e):
+            btn.config(bg=s["activebackground"])
+
+        def on_leave(e):
+            btn.config(bg=s["bg"])
+
+        btn.bind("<Enter>", on_enter)
+        btn.bind("<Leave>", on_leave)
+
+        return btn
 
     def create_ui(self):
         main = tk.Frame(self.root, bg=Colors.BG, padx=20, pady=15)
@@ -3759,7 +3948,13 @@ Made with ❤️ by OJ | v1.4.0 | Jan 2025
 
         # Update button icon
         if hasattr(self, "dark_mode_btn"):
-            self.dark_mode_btn.config(text="☀️" if is_dark else "🌙")
+            self.dark_mode_btn.config(
+                text="☀️" if is_dark else "🌙",
+                bg=Colors.BG,
+                fg=Colors.TEXT,
+                activebackground=Colors.BG_SECONDARY,
+                activeforeground=Colors.TEXT,
+            )
 
         # Save preference
         if FEATURES_AVAILABLE and self.app_settings:
@@ -3771,67 +3966,193 @@ Made with ❤️ by OJ | v1.4.0 | Jan 2025
 
     def _apply_theme(self):
         """Apply current theme colors to all widgets."""
-        # Update root
+        # Update root window
         self.root.configure(bg=Colors.BG)
 
-        # Recursively update all widgets
+        # Update ttk styles first
+        self.setup_styles()
+
+        # Recursively update all tk widgets
         self._update_widget_colors(self.root)
 
-        # Update ttk styles
-        self.setup_styles()
+        # Update specific known widgets that need special handling
+        self._update_special_widgets()
+
+    def _update_special_widgets(self):
+        """Update specific widgets that need special color handling."""
+        # Update log text areas
+        if hasattr(self, "log_text"):
+            self.log_text.configure(
+                bg=Colors.BG_SECONDARY,
+                fg=Colors.TEXT,
+                insertbackground=Colors.TEXT,
+                selectbackground=Colors.PRIMARY,
+                selectforeground="white",
+            )
+        if hasattr(self, "links_log_text"):
+            self.links_log_text.configure(
+                bg=Colors.BG_SECONDARY,
+                fg=Colors.TEXT,
+                insertbackground=Colors.TEXT,
+                selectbackground=Colors.PRIMARY,
+                selectforeground="white",
+            )
+
+        # Update notebook tabs
+        if hasattr(self, "notebook"):
+            style = ttk.Style()
+            style.configure("TNotebook", background=Colors.BG)
+            style.configure(
+                "TNotebook.Tab",
+                background=Colors.BG_SECONDARY,
+                foreground=Colors.TEXT_SECONDARY,
+            )
+            style.map(
+                "TNotebook.Tab",
+                background=[("selected", Colors.BG)],
+                foreground=[("selected", Colors.PRIMARY)],
+            )
 
     def _update_widget_colors(self, widget):
         """Recursively update widget colors for theme change."""
         try:
             widget_class = widget.winfo_class()
 
-            # Skip ttk widgets (handled by styles)
-            if widget_class.startswith("T"):
-                pass
-            elif widget_class in ("Frame", "Labelframe"):
-                widget.configure(bg=Colors.BG)
-            elif widget_class == "Label":
-                # Check if it's a header label (white text on primary)
+            # Handle different widget types
+            if widget_class in ("Frame", "Labelframe"):
                 try:
                     current_bg = widget.cget("bg")
-                    if (
-                        current_bg == Colors.PRIMARY
-                        or current_bg == "#2563eb"
-                        or current_bg == "#3b82f6"
+                    # Keep primary-colored frames (like logo background)
+                    if current_bg in ("#2563eb", "#3b82f6", "#1d4ed8"):
+                        widget.configure(bg=Colors.PRIMARY)
+                    else:
+                        widget.configure(bg=Colors.BG)
+                except:
+                    widget.configure(bg=Colors.BG)
+
+            elif widget_class == "Label":
+                try:
+                    current_bg = widget.cget("bg")
+                    current_fg = widget.cget("fg")
+                    # Keep labels with white text on colored backgrounds
+                    if current_fg == "white" or current_bg in (
+                        "#2563eb",
+                        "#3b82f6",
+                        "#1d4ed8",
                     ):
                         widget.configure(bg=Colors.PRIMARY, fg="white")
+                    elif current_fg in ("#64748b", "#a1a1b5"):  # Secondary text
+                        widget.configure(bg=Colors.BG, fg=Colors.TEXT_SECONDARY)
                     else:
                         widget.configure(bg=Colors.BG, fg=Colors.TEXT)
                 except:
                     pass
+
             elif widget_class == "Button":
                 try:
                     current_bg = widget.cget("bg")
-                    # Keep primary/success/error buttons as-is
-                    if current_bg not in (
-                        Colors.PRIMARY,
-                        Colors.SUCCESS,
-                        Colors.ERROR,
-                        "#2563eb",
-                        "#22c55e",
-                        "#ef4444",
-                        "#3b82f6",
-                        "#4ade80",
-                        "#f87171",
+                    current_fg = widget.cget("fg")
+
+                    # Primary buttons (blue)
+                    if (
+                        current_bg in ("#2563eb", "#1d4ed8", "#3b82f6")
+                        or current_fg == "white"
                     ):
-                        widget.configure(bg=Colors.BG, fg=Colors.TEXT)
+                        if current_bg in (
+                            "#22c55e",
+                            "#4ade80",
+                            "#16a34a",
+                        ):  # Green/success
+                            widget.configure(
+                                bg=Colors.SUCCESS,
+                                activebackground="#16a34a",
+                                activeforeground="white",
+                            )
+                        elif current_bg in (
+                            "#ef4444",
+                            "#f87171",
+                            "#dc2626",
+                        ):  # Red/error
+                            widget.configure(
+                                bg=Colors.ERROR,
+                                activebackground="#dc2626",
+                                activeforeground="white",
+                            )
+                        else:  # Primary blue
+                            widget.configure(
+                                bg=Colors.PRIMARY,
+                                activebackground=Colors.PRIMARY_DARK,
+                                activeforeground="white",
+                            )
+                    else:
+                        # Secondary/ghost buttons
+                        widget.configure(
+                            bg=(
+                                Colors.BG_SECONDARY
+                                if current_bg != Colors.BG
+                                else Colors.BG
+                            ),
+                            fg=Colors.TEXT,
+                            activebackground=Colors.BORDER,
+                            activeforeground=Colors.TEXT,
+                        )
                 except:
                     pass
+
             elif widget_class == "Text":
-                widget.configure(bg=Colors.BG_SECONDARY, fg=Colors.TEXT)
+                try:
+                    widget.configure(
+                        bg=Colors.BG_SECONDARY,
+                        fg=Colors.TEXT,
+                        insertbackground=Colors.TEXT,
+                        selectbackground=Colors.PRIMARY,
+                        selectforeground="white",
+                    )
+                except:
+                    pass
+
             elif widget_class == "Entry":
-                widget.configure(bg=Colors.BG_SECONDARY, fg=Colors.TEXT)
+                try:
+                    widget.configure(
+                        bg=Colors.BG_SECONDARY,
+                        fg=Colors.TEXT,
+                        insertbackground=Colors.TEXT,
+                        selectbackground=Colors.PRIMARY,
+                        selectforeground="white",
+                        disabledbackground=Colors.BG_SECONDARY,
+                        disabledforeground=Colors.TEXT_SECONDARY,
+                    )
+                except:
+                    pass
+
+            elif widget_class == "Listbox":
+                try:
+                    widget.configure(
+                        bg=Colors.BG_SECONDARY,
+                        fg=Colors.TEXT,
+                        selectbackground=Colors.PRIMARY,
+                        selectforeground="white",
+                        highlightbackground=Colors.BORDER,
+                        highlightcolor=Colors.PRIMARY,
+                    )
+                except:
+                    pass
+
+            elif widget_class == "Canvas":
+                try:
+                    widget.configure(bg=Colors.BG)
+                except:
+                    pass
+
         except Exception:
             pass
 
-        # Process children
-        for child in widget.winfo_children():
-            self._update_widget_colors(child)
+        # Process children recursively
+        try:
+            for child in widget.winfo_children():
+                self._update_widget_colors(child)
+        except:
+            pass
 
     def _download_documentation(self):
         """Download full documentation as PDF file."""
@@ -3845,158 +4166,858 @@ Made with ❤️ by OJ | v1.4.0 | Jan 2025
         if not filepath:
             return
 
-        # Documentation content
+        # Documentation content - COMPREHENSIVE VERSION
         doc_sections = [
             ("Chi Tweet Scraper", "Complete User Documentation - Version 1.4.0"),
             (
                 "1. INTRODUCTION",
-                """Chi Tweet Scraper is a professional desktop application for collecting data from Twitter/X. It supports both free (cookie-based) and paid (API-based) scraping methods.
+                """Chi Tweet Scraper is a professional desktop application designed for collecting and analyzing data from Twitter/X. Whether you're a researcher, marketer, data analyst, or developer, this tool provides powerful capabilities for gathering tweet data efficiently.
 
-Key capabilities:
-• Scrape tweets by username or keywords
-• Multiple export formats (Excel, CSV, JSON, SQLite, HTML, Markdown)
-• Date range filtering with presets
-• Engagement filters (min likes, retweets)
-• Batch processing for multiple accounts
-• Dark mode support
-• Automatic retry on errors""",
+KEY FEATURES:
+• Multiple scraping methods: Free cookie-based or paid API-based
+• Flexible search: By username, keywords, or specific tweet URLs
+• Advanced filtering: Date ranges, engagement thresholds, content types
+• Multiple export formats: Excel, CSV, JSON, SQLite, HTML, Markdown
+• Batch processing: Scrape multiple accounts in one session
+• Smart error handling: Automatic retries, rate limit management
+• User-friendly interface: Dark mode, progress tracking, activity logs
+• Data persistence: Resume interrupted scrapes, save preferences
+
+USE CASES:
+• Academic research and social media analysis
+• Brand monitoring and competitor analysis
+• Content curation and trend tracking
+• Sentiment analysis data collection
+• Historical tweet archival
+• Influencer analytics""",
             ),
             (
                 "2. SYSTEM REQUIREMENTS",
-                """• Operating System: Windows 10/11, macOS, or Linux
-• Python: 3.8 or higher (if running from source)
-• RAM: 4GB minimum, 8GB recommended
-• Internet connection required
-• Browser with Cookie-Editor extension (for cookie method)""",
+                """MINIMUM REQUIREMENTS:
+• Operating System: Windows 10/11, macOS 10.14+, or Linux (Ubuntu 18.04+)
+• Processor: 1 GHz or faster
+• RAM: 4 GB minimum
+• Storage: 100 MB for application + space for exported data
+• Internet: Stable broadband connection
+• Display: 1280x720 minimum resolution
+
+RECOMMENDED:
+• RAM: 8 GB or more (for large scrapes)
+• SSD storage (faster file operations)
+• Modern browser (Chrome, Firefox, Edge) for cookie extraction
+
+SOFTWARE DEPENDENCIES (if running from source):
+• Python 3.8 or higher
+• pip (Python package manager)
+• Required packages: twikit, pandas, openpyxl, Pillow, requests, httpx
+• Optional: reportlab (for PDF documentation)""",
             ),
             (
                 "3. INSTALLATION",
-                """Option A: From Executable (Windows)
-1. Download the .exe file
-2. Extract to a folder of your choice
-3. IMPORTANT: Whitelist in antivirus (see Section 4)
-4. Double-click to run
+                """OPTION A: WINDOWS EXECUTABLE (Recommended for most users)
 
-Option B: From Source (All Platforms)
-1. Install Python 3.8+
-2. Download/clone the source code
-3. Run: pip install -r requirements.txt
-4. Run: python -m src.gui""",
+Step 1: Download
+• Download the latest release (.zip file) from the official source
+
+Step 2: Extract
+• Right-click the .zip file → "Extract All"
+• Choose a location (e.g., C:\\Programs\\ChiTweetScraper)
+• IMPORTANT: Avoid extracting to Program Files (permission issues)
+
+Step 3: Whitelist in Antivirus (CRITICAL - See Section 4)
+• Add the extracted folder to your antivirus exclusions
+• This MUST be done before running the app
+
+Step 4: Run
+• Double-click "Chi Tweet Scraper.exe"
+• On first run, Windows may show a SmartScreen warning
+• Click "More info" → "Run anyway"
+
+---
+
+OPTION B: FROM SOURCE (For developers/advanced users)
+
+Step 1: Install Python
+• Download Python 3.8+ from python.org
+• During installation, CHECK "Add Python to PATH"
+
+Step 2: Download Source Code
+• Clone or download the repository
+• Extract to your preferred location
+
+Step 3: Install Dependencies
+• Open Command Prompt/Terminal in the folder
+• Run: pip install -r requirements.txt
+
+Step 4: Run the Application
+• Run: python -m src.gui
+• Or: python src/gui.py""",
             ),
             (
-                "4. ANTIVIRUS WHITELIST (IMPORTANT!)",
-                """The application may be flagged by antivirus - THIS IS A FALSE POSITIVE.
+                "4. ANTIVIRUS WHITELIST GUIDE",
+                """⚠️ IMPORTANT: READ THIS SECTION CAREFULLY ⚠️
 
-Why it's flagged:
-• Built with PyInstaller (used by both legitimate apps and malware)
-• Makes network requests (to Twitter/APIs)
-• Writes files to disk (exports)
-• Not digitally signed (costs $200-300/year)
+The application may be flagged by antivirus software as a potential threat. This is a FALSE POSITIVE - the application is completely safe.
 
-WINDOWS DEFENDER WHITELIST:
-1. Open Windows Security (search in Start menu)
+WHY IS IT FLAGGED?
+1. PyInstaller Packaging: The app is bundled using PyInstaller, a legitimate tool that's unfortunately also used by some malware. Antivirus software flags many PyInstaller apps by default.
+
+2. Network Activity: The app makes HTTP requests to Twitter and API services, which some antivirus programs consider suspicious.
+
+3. File System Access: Writing export files triggers some security software.
+
+4. No Code Signing: Digital code signing certificates cost $200-500/year, which isn't feasible for free software.
+
+---
+
+WINDOWS DEFENDER (Windows 10/11):
+
+Method 1: Folder Exclusion (Recommended)
+1. Press Windows key, type "Windows Security", press Enter
 2. Click "Virus & threat protection"
-3. Click "Manage settings" under Virus & threat protection settings
-4. Scroll to "Exclusions" → "Add or remove exclusions"
-5. Click "Add an exclusion" → "Folder"
-6. Select the Chi Tweet Scraper folder
+3. Scroll down to "Virus & threat protection settings"
+4. Click "Manage settings"
+5. Scroll down to "Exclusions"
+6. Click "Add or remove exclusions"
+7. Click "Add an exclusion" → select "Folder"
+8. Navigate to and select the Chi Tweet Scraper folder
+9. Click "Select Folder"
 
-OTHER ANTIVIRUS:
-• Norton: Settings → Antivirus → Scans and Risks → Items to Exclude
-• McAfee: Settings → Real-Time Scanning → Excluded Files
-• Avast: Menu → Settings → General → Exceptions
-• Bitdefender: Protection → Settings → Exclusions""",
+Method 2: If the app was already blocked/deleted
+1. Open Windows Security → Virus & threat protection
+2. Click "Protection history"
+3. Find the Chi Tweet Scraper entry
+4. Click it → "Actions" → "Allow"
+
+---
+
+NORTON ANTIVIRUS:
+1. Open Norton
+2. Click "Settings" (gear icon)
+3. Click "Antivirus"
+4. Click "Scans and Risks"
+5. Scroll to "Items to Exclude from Scans"
+6. Click "Configure"
+7. Click "Add Folders" → select the app folder
+
+MCAFEE:
+1. Open McAfee
+2. Click "Settings" (gear icon)
+3. Click "Real-Time Scanning"
+4. Click "Excluded Files"
+5. Click "Add file" → navigate to the app folder
+
+AVAST/AVG:
+1. Open Avast/AVG
+2. Click "Menu" → "Settings"
+3. Click "General" → "Exceptions"
+4. Click "Add Exception"
+5. Browse to the app folder → Add
+
+BITDEFENDER:
+1. Open Bitdefender
+2. Click "Protection"
+3. Click "Settings" under Antivirus
+4. Click "Manage Exceptions"
+5. Click "Add" → select the app folder
+
+KASPERSKY:
+1. Open Kaspersky
+2. Click "Settings" (gear icon)
+3. Click "Additional" → "Threats and Exclusions"
+4. Click "Manage exclusions"
+5. Click "Add" → browse to app folder
+
+---
+
+IF YOUR ANTIVIRUS DELETES THE APP:
+1. First, add the exclusion as described above
+2. Check your antivirus quarantine and restore the file
+3. Re-extract the application from the original .zip
+4. If issues persist, temporarily disable real-time protection during extraction""",
             ),
             (
-                "5. COOKIE AUTHENTICATION (Free)",
-                """This method uses your Twitter login cookies.
+                "5. COOKIE-BASED AUTHENTICATION",
+                """Cookie-based scraping is FREE and uses your Twitter login session. Here's how to set it up:
 
-Setup steps:
-1. Install "Cookie-Editor" browser extension (Chrome/Firefox/Edge)
-2. Log in to Twitter/X.com in your browser
-3. Click Cookie-Editor icon → Export → Export as JSON
-4. In Chi Tweet Scraper: Click 🍪 button → Paste → Save Cookies
+WHAT YOU'LL NEED:
+• A Twitter/X account (logged in via browser)
+• Cookie-Editor browser extension
 
-Note: Cookies expire every 1-2 weeks. Refresh when prompted.""",
+---
+
+STEP 1: INSTALL COOKIE-EDITOR
+
+For Chrome:
+1. Go to Chrome Web Store (search "Cookie-Editor")
+2. Click "Add to Chrome"
+3. Click "Add Extension" in the popup
+
+For Firefox:
+1. Go to Firefox Add-ons (search "Cookie-Editor")
+2. Click "Add to Firefox"
+3. Click "Add" in the popup
+
+For Microsoft Edge:
+1. Go to Edge Add-ons (search "Cookie-Editor")
+2. Click "Get" → "Add extension"
+
+---
+
+STEP 2: EXPORT YOUR TWITTER COOKIES
+
+1. Open your browser and go to twitter.com or x.com
+2. Make sure you're LOGGED IN to your Twitter account
+3. Click the Cookie-Editor icon in your browser toolbar
+   (It looks like a cookie/puzzle piece)
+4. In the Cookie-Editor popup, click "Export" (at the bottom)
+5. Click "Export as JSON" - this copies cookies to your clipboard
+
+---
+
+STEP 3: IMPORT COOKIES INTO CHI TWEET SCRAPER
+
+1. In Chi Tweet Scraper, make sure "Cookie-based (Free)" is selected
+2. Click the 🍪 (cookie) button next to the method dropdown
+3. In the popup window:
+   a. Clear any existing text in the box
+   b. Press Ctrl+V to paste your cookies
+   c. Click "Save Cookies"
+4. You should see "Cookies saved successfully!"
+
+---
+
+COOKIE EXPIRATION & REFRESH:
+
+• Cookies typically expire after 1-2 weeks
+• When cookies expire, you'll see a popup during scraping
+• Simply repeat Steps 2-3 to refresh your cookies
+• Your scraping progress is automatically saved
+
+TIPS:
+• Keep your browser logged into Twitter for easy cookie refresh
+• Don't log out of Twitter in your browser (this invalidates cookies)
+• If you see "Cookie Expired" errors, get fresh cookies immediately""",
             ),
             (
-                "6. API AUTHENTICATION (Paid)",
-                """Uses third-party API services for reliable scraping.
+                "6. API-BASED AUTHENTICATION",
+                """API-based scraping uses third-party services for more reliable, high-volume data collection. It's paid but offers several advantages.
 
-Available: TwexAPI.io - $0.14 per 1,000 tweets
+ADVANTAGES OF API METHOD:
+• No cookie management or expiration issues
+• Higher rate limits for large scrapes
+• More reliable for long-running jobs
+• Professional-grade data access
+• Better for production/commercial use
 
-Setup:
-1. Select API method from dropdown
-2. Click ⚙ button → "Get API Key" link
-3. Sign up at twexapi.io and get your key
-4. Paste key → Test → Save""",
+AVAILABLE PROVIDERS:
+
+TwexAPI.io
+• Cost: $0.14 per 1,000 tweets
+• Sign up: https://twexapi.io
+• Payment: Credit card, PayPal
+• Features: Fast response, reliable uptime
+
+---
+
+SETUP INSTRUCTIONS:
+
+Step 1: Get Your API Key
+1. Visit https://twexapi.io
+2. Click "Sign Up" or "Get Started"
+3. Create an account with your email
+4. Verify your email address
+5. Add credits to your account ($5-10 recommended to start)
+6. Go to your dashboard → API Keys section
+7. Copy your API key
+
+Step 2: Configure in Chi Tweet Scraper
+1. Select "TwexAPI ($0.14/1k)" from the Method dropdown
+2. Click the ⚙ (gear) button
+3. In the API Key dialog:
+   a. Paste your API key in the text field
+   b. Click "Test" to verify it works
+   c. You should see "✓ Valid" with your balance
+   d. Click "Save"
+
+Step 3: Start Scraping
+• The app will now use your API key for scraping
+• Costs are deducted automatically per tweet
+• Monitor your balance in the API Key dialog
+
+---
+
+COST ESTIMATION:
+The app shows estimated costs before scraping:
+• 1,000 tweets ≈ $0.14
+• 10,000 tweets ≈ $1.40
+• 100,000 tweets ≈ $14.00
+
+TIPS:
+• Start with a small scrape to test your setup
+• Use filters to reduce costs (only get tweets you need)
+• Monitor your API balance regularly
+• Set up billing alerts on the provider's website""",
             ),
             (
-                "7. SCRAPING MODES",
-                """USERNAME MODE:
-Enter Twitter handle (e.g., elonmusk) to scrape all their tweets in date range.
+                "7. SCRAPING MODES DETAILED GUIDE",
+                """Chi Tweet Scraper offers four different scraping modes to suit various needs:
 
-KEYWORDS MODE:
-Enter comma-separated keywords (e.g., AI, technology)
-• OR: Finds tweets with ANY keyword
-• AND: Finds tweets with ALL keywords
+═══════════════════════════════════════════
+MODE 1: USERNAME SCRAPING
+═══════════════════════════════════════════
 
-BATCH MODE:
-Create .txt file with usernames (one per line), check Batch mode, select file.
+Purpose: Get all tweets from a specific Twitter user
 
-SCRAPE BY LINKS:
-Create file with tweet URLs, go to Links tab, select file, start scrape.""",
+How to use:
+1. Enter the username in the "Username" field
+   • With or without @: "elonmusk" or "@elonmusk"
+2. Set your date range:
+   • Use preset buttons (Last 7 days, Last 30 days, etc.)
+   • Or enter custom dates (YYYY-MM-DD format)
+3. (Optional) Set filters:
+   • Minimum likes/retweets
+   • Exclude retweets
+   • Exclude replies
+4. Click "Start Scraping"
+
+Best for:
+• Analyzing a specific user's content
+• Archiving someone's tweet history
+• Influencer analysis
+
+═══════════════════════════════════════════
+MODE 2: KEYWORD SEARCH
+═══════════════════════════════════════════
+
+Purpose: Find tweets containing specific words or phrases
+
+How to use:
+1. Leave Username field empty
+2. Enter keywords in the "Keywords" field
+   • Separate multiple keywords with commas
+   • Example: "artificial intelligence, machine learning, AI"
+3. Select search type:
+   • OR: Tweets containing ANY of the keywords
+   • AND: Tweets containing ALL keywords
+4. Set date range and filters
+5. Click "Start Scraping"
+
+Advanced keyword syntax:
+• Exact phrase: "machine learning" (with quotes)
+• Exclude word: -spam
+• From user: from:username
+• Hashtag: #AI
+
+Best for:
+• Topic research
+• Trend monitoring
+• Brand mention tracking
+
+═══════════════════════════════════════════
+MODE 3: BATCH PROCESSING
+═══════════════════════════════════════════
+
+Purpose: Scrape multiple users in one session
+
+How to use:
+1. Create a text file (.txt) with usernames:
+   • One username per line, OR
+   • Comma-separated: user1, user2, user3
+   
+   Example file content:
+   elonmusk
+   BillGates
+   satlocker
+   
+2. Check the "Batch mode" checkbox
+3. Click "Select File" and choose your .txt file
+4. Set your date range (applies to all users)
+5. Click "Start Scraping"
+
+Output:
+• Each user's tweets saved to a separate file
+• Files named: username_date_count.xlsx
+
+Best for:
+• Competitor analysis
+• Multi-influencer research
+• Large-scale data collection
+
+═══════════════════════════════════════════
+MODE 4: SCRAPE BY LINKS
+═══════════════════════════════════════════
+
+Purpose: Get detailed data from specific tweet URLs
+
+How to use:
+1. Go to the "Scrape by Links" tab
+2. Create a file with tweet URLs:
+
+   For .txt file (one URL per line):
+   https://twitter.com/user/status/123456789
+   https://x.com/user/status/987654321
+   
+   For .xlsx file:
+   Put URLs in the first column (Column A)
+
+3. Click "Select File" and choose your file
+4. Click "Start Links Scrape"
+
+Data collected per tweet:
+• Full tweet text
+• Engagement metrics (likes, retweets, replies, quotes, views)
+• User information
+• Timestamp
+• Media attachments
+• Thread/conversation context
+
+Best for:
+• Analyzing specific viral tweets
+• Detailed engagement analysis
+• Content verification""",
             ),
             (
-                "8. EXPORT FORMATS",
-                """• Excel (.xlsx) - Best for viewing and filtering
-• CSV (.csv) - Universal, fast for large datasets
-• JSON (.json) - For developers
-• SQLite (.db) - Database format for queries
-• HTML (.html) - View in browser
-• Markdown (.md) - For documentation""",
+                "8. EXPORT FORMATS GUIDE",
+                """Chi Tweet Scraper supports multiple export formats. Choose based on your needs:
+
+═══════════════════════════════════════════
+EXCEL (.xlsx) - RECOMMENDED FOR MOST USERS
+═══════════════════════════════════════════
+Best for: Viewing, filtering, sorting, basic analysis
+
+Features:
+• Formatted columns with proper widths
+• Filter-ready headers
+• Works with Excel, Google Sheets, LibreOffice
+
+Use when:
+• You want to view and explore the data
+• You need to filter by engagement, date, etc.
+• You're sharing with non-technical users
+
+═══════════════════════════════════════════
+CSV (.csv) - UNIVERSAL FORMAT
+═══════════════════════════════════════════
+Best for: Large datasets, data processing, importing to other tools
+
+Features:
+• Lightweight file size
+• UTF-8 encoded (supports all languages/emojis)
+• Opens in any spreadsheet or text editor
+
+Use when:
+• Scraping 10,000+ tweets
+• Importing into databases or analytics tools
+• Maximum compatibility needed
+
+═══════════════════════════════════════════
+JSON (.json) - FOR DEVELOPERS
+═══════════════════════════════════════════
+Best for: Programming, APIs, data pipelines
+
+Features:
+• Native data structure preserved
+• Easy to parse programmatically
+• Includes all metadata
+
+Use when:
+• Building applications with the data
+• Feeding into analysis scripts
+• Need programmatic access
+
+═══════════════════════════════════════════
+SQLITE (.db) - DATABASE FORMAT
+═══════════════════════════════════════════
+Best for: Large datasets, SQL queries, data analysis
+
+Features:
+• Local database file
+• Run SQL queries directly
+• Efficient for large datasets
+
+Use when:
+• Working with 50,000+ tweets
+• Need complex filtering/aggregation
+• Database integration required
+
+═══════════════════════════════════════════
+HTML (.html) - WEB VIEWABLE
+═══════════════════════════════════════════
+Best for: Sharing, presentations, web viewing
+
+Features:
+• Opens in any web browser
+• Basic styling included
+• Shareable as a file or webpage
+
+Use when:
+• Creating reports to share
+• Quick visual review
+• Embedding in websites
+
+═══════════════════════════════════════════
+MARKDOWN (.md) - DOCUMENTATION
+═══════════════════════════════════════════
+Best for: Documentation, notes, GitHub
+
+Features:
+• Plain text with formatting
+• Works with note apps (Obsidian, Notion)
+• GitHub compatible
+
+Use when:
+• Creating research notes
+• Documentation purposes
+• GitHub/GitLab projects
+
+═══════════════════════════════════════════
+DATA FIELDS EXPORTED:
+═══════════════════════════════════════════
+Every export includes these columns:
+• created_at: Tweet timestamp
+• user_name: Twitter handle
+• user_display_name: Display name
+• text: Full tweet content
+• retweet_count: Number of retweets
+• favorite_count: Number of likes
+• reply_count: Number of replies
+• quote_count: Number of quote tweets
+• view_count: Number of views (if available)
+• tweet_id: Unique tweet identifier
+• tweet_url: Direct link to tweet""",
             ),
             (
-                "9. FEATURES",
-                """🌙 Dark Mode - Toggle in Help window
-📅 Date Presets - Quick date range selection
-🔍 Filters - Min likes/retweets, exclude RT/replies
-📜 History - Track all past scrapes
-📊 Analytics - Engagement stats after scraping
-🔄 Auto-Retry - Automatic error recovery
-⏸️ Breaks - Pause to avoid rate limits""",
+                "9. FEATURES & SETTINGS",
+                """═══════════════════════════════════════════
+🌙 DARK MODE
+═══════════════════════════════════════════
+Toggle between light and dark themes:
+• Click the 🌙/☀️ button in the top-right corner
+• Theme applies immediately
+• Preference is saved automatically
+
+═══════════════════════════════════════════
+📅 DATE PRESETS
+═══════════════════════════════════════════
+Quick date range selection buttons:
+• Today
+• Last 7 days
+• Last 30 days
+• Last 90 days
+• This month
+• Last month
+• This year
+• Last year
+• All time
+
+═══════════════════════════════════════════
+🔍 FILTERS
+═══════════════════════════════════════════
+Refine your results:
+
+Minimum Likes: Only get tweets with X+ likes
+Minimum Retweets: Only get tweets with X+ retweets
+Exclude Retweets: Skip RT'd content
+Exclude Replies: Skip reply tweets
+Media Only: Only tweets with images/videos
+
+═══════════════════════════════════════════
+⏸️ BREAKS (Rate Limit Prevention)
+═══════════════════════════════════════════
+For large scrapes, enable breaks:
+
+• Check "Enable breaks"
+• "Every X tweets": How often to pause (default: 100)
+• "Break duration": Min-max minutes to wait
+
+Recommended settings:
+• 500-1000 tweets: Every 100, 3-5 min
+• 1000-5000 tweets: Every 100, 5-10 min
+• 5000+ tweets: Every 100, 8-15 min
+
+═══════════════════════════════════════════
+📊 ANALYTICS
+═══════════════════════════════════════════
+After each scrape, view:
+• Total engagement (likes, RTs, replies)
+• Average engagement per tweet
+• Top performing tweet
+• Engagement distribution
+• Most active times
+
+═══════════════════════════════════════════
+📜 SCRAPE HISTORY
+═══════════════════════════════════════════
+Track all your past scrapes:
+• Date and time of scrape
+• Username/keywords searched
+• Tweet count
+• API cost (if applicable)
+• Quick access to export files
+
+═══════════════════════════════════════════
+🔄 AUTO-RETRY
+═══════════════════════════════════════════
+The app automatically handles errors:
+• Network errors: Retries with exponential backoff
+• Rate limits: Waits and continues
+• Cookie expiration: Prompts for refresh
+• Unknown errors: Shows retry/stop dialog
+
+═══════════════════════════════════════════
+💾 SETTINGS PERSISTENCE
+═══════════════════════════════════════════
+Your preferences are saved:
+• Last used date range
+• Filter settings
+• Export format preference
+• Dark mode preference
+• API keys (encrypted)""",
             ),
             (
                 "10. TROUBLESHOOTING",
-                """Cookie Expired → Get fresh cookies from Cookie-Editor
-Rate Limit → Wait 15-30 min, enable breaks
-Network Error → Check internet, app auto-retries
-No Tweets Found → Check username, expand date range
-App Won't Start → Install requirements, check antivirus""",
+                """═══════════════════════════════════════════
+COMMON ISSUES AND SOLUTIONS
+═══════════════════════════════════════════
+
+ISSUE: "Cookie Expired" Error
+─────────────────────────────
+Cause: Your Twitter session cookies are no longer valid
+
+Solution:
+1. Open your browser and go to twitter.com
+2. Make sure you're logged in
+3. Use Cookie-Editor to export fresh cookies
+4. Click 🍪 in the app → paste new cookies → Save
+
+Prevention:
+• Keep browser logged into Twitter
+• Refresh cookies weekly (even if not expired)
+
+───────────────────────────────────────────
+
+ISSUE: "Rate Limit" Error
+─────────────────────────────
+Cause: Too many requests to Twitter in a short time
+
+Solution:
+1. Wait 15-30 minutes
+2. Enable breaks (every 100 tweets, 5-10 min pause)
+3. Consider using API method for large scrapes
+
+Prevention:
+• Always enable breaks for 500+ tweets
+• Don't run multiple scrapes simultaneously
+• Use API method for high-volume needs
+
+───────────────────────────────────────────
+
+ISSUE: "Network Error"
+─────────────────────────────
+Cause: Internet connection issues
+
+Solution:
+1. Check your internet connection
+2. App will auto-retry up to 3 times
+3. If persistent, restart the app
+4. Check if Twitter is accessible in your browser
+
+Prevention:
+• Use stable internet connection
+• Avoid scraping during network maintenance
+
+───────────────────────────────────────────
+
+ISSUE: "No Tweets Found"
+─────────────────────────────
+Cause: No tweets match your criteria
+
+Solution:
+1. Verify username spelling (case-insensitive)
+2. Expand your date range
+3. Check if the account exists and is public
+4. Remove or relax filters
+5. For keywords: try different terms
+
+Check:
+• Is the account suspended or deleted?
+• Is the account private?
+• Does the user have tweets in that date range?
+
+───────────────────────────────────────────
+
+ISSUE: App Won't Start
+─────────────────────────────
+Cause: Missing files, permissions, or antivirus
+
+Solution:
+1. Check antivirus quarantine → restore files
+2. Add folder to antivirus exclusions
+3. Re-extract from original .zip
+4. For source: pip install -r requirements.txt
+5. Run as administrator (right-click → Run as admin)
+
+───────────────────────────────────────────
+
+ISSUE: Antivirus Blocks/Deletes App
+─────────────────────────────
+Cause: False positive detection
+
+Solution:
+1. See Section 4 for detailed whitelist instructions
+2. Add exclusion BEFORE extracting
+3. Check quarantine and restore
+4. Temporarily disable real-time protection
+
+───────────────────────────────────────────
+
+ISSUE: Export File Empty or Corrupted
+─────────────────────────────
+Cause: Scrape interrupted or error during save
+
+Solution:
+1. Check Activity Log for errors
+2. Let scrape complete fully
+3. Try different export format
+4. Check disk space
+5. Check folder write permissions
+
+───────────────────────────────────────────
+
+ISSUE: Slow Performance
+─────────────────────────────
+Cause: Large date range, high-volume account, or system resources
+
+Solution:
+1. Use smaller date ranges
+2. Enable breaks
+3. Close other applications
+4. Use API method for better performance
+5. Export to CSV (faster than Excel)
+
+───────────────────────────────────────────
+
+ISSUE: API Key Not Working
+─────────────────────────────
+Cause: Invalid key, expired, or no balance
+
+Solution:
+1. Verify key is copied correctly (no spaces)
+2. Click "Test" to check validity
+3. Check your balance on the provider website
+4. Generate a new key if needed
+5. Contact provider support if issues persist""",
             ),
             (
-                "11. FAQ",
-                """Q: Is this app safe?
-A: Yes. Antivirus flags are false positives due to PyInstaller packaging.
+                "11. FREQUENTLY ASKED QUESTIONS",
+                """Q: Is Chi Tweet Scraper safe to use?
+A: Yes, absolutely. The antivirus warnings are false positives caused by the PyInstaller packaging method. The app is open-source and contains no malware.
 
-Q: How much does it cost?
-A: Cookies = FREE. API = ~$0.14 per 1,000 tweets.
+Q: Is scraping tweets legal?
+A: For personal, research, and educational use, scraping public tweets is generally acceptable. However, always respect Twitter's Terms of Service and data privacy laws in your jurisdiction. Don't use scraped data for harassment, spam, or commercial purposes without proper authorization.
+
+Q: How much does it cost to use?
+A: Cookie-based scraping is completely FREE. API-based scraping costs approximately $0.14 per 1,000 tweets through TwexAPI.io.
+
+Q: How many tweets can I scrape?
+A: There's no hard limit. However:
+• Cookie method: May hit rate limits after several thousand tweets
+• API method: Limited only by your budget
+• Use breaks for large scrapes to avoid issues
 
 Q: Can I scrape private accounts?
-A: No, only public tweets.
+A: No. Chi Tweet Scraper can only access public tweets. Private accounts require authentication that we don't support.
 
-Q: Is there a tweet limit?
-A: No hard limit, but use breaks for large scrapes.""",
+Q: How often do cookies expire?
+A: Typically every 1-2 weeks. You'll be prompted to refresh when needed. Keep your browser logged into Twitter for easy refresh.
+
+Q: Can I scrape deleted tweets?
+A: No. Only tweets currently visible on Twitter can be scraped. Deleted tweets are not accessible.
+
+Q: Does the app store my cookies/API keys securely?
+A: Cookies are stored locally on your computer in the app folder. API keys are stored in a local configuration file. Nothing is transmitted to external servers except Twitter/API requests.
+
+Q: Can I run multiple scrapes at once?
+A: While technically possible with multiple app instances, it's not recommended as it increases the risk of rate limiting.
+
+Q: How do I update the app?
+A: Download the latest version and extract it. Your settings (cookies, API keys, preferences) are stored in the data folder and can be copied to the new version.
+
+Q: The app crashed - is my data lost?
+A: The app auto-saves progress every 25 tweets. When you restart, you may be prompted to resume an interrupted scrape.
+
+Q: Can I schedule automatic scrapes?
+A: Not currently built-in. You could use Windows Task Scheduler or cron jobs with command-line arguments for automation.
+
+Q: What languages are supported?
+A: The app can scrape tweets in any language. Exports use UTF-8 encoding to support all characters including emojis.
+
+Q: How accurate is the engagement data?
+A: Engagement metrics (likes, retweets, etc.) reflect the values at the time of scraping. These numbers change over time as tweets receive more engagement.""",
             ),
             (
-                "SUPPORT",
-                """Video Tutorials:
-• Setup: https://youtu.be/RKX2sgQVgBg
-• Full Tutorial: https://youtu.be/AbdpX6QZLm4
+                "SUPPORT & RESOURCES",
+                """═══════════════════════════════════════════
+VIDEO TUTORIALS
+═══════════════════════════════════════════
+Getting Started Guide:
+https://youtu.be/RKX2sgQVgBg
 
-API Provider: https://twexapi.io
+Full Feature Tutorial:
+https://youtu.be/AbdpX6QZLm4
 
-Made with ❤️ by OJ (Data Creator) | January 2025""",
+═══════════════════════════════════════════
+API PROVIDER
+═══════════════════════════════════════════
+TwexAPI.io: https://twexapi.io
+• Sign up for API access
+• View pricing and documentation
+• Get support for API issues
+
+═══════════════════════════════════════════
+KEYBOARD SHORTCUTS
+═══════════════════════════════════════════
+Ctrl+V: Paste (cookies, text)
+Enter: Start scraping (when focused)
+Escape: Cancel dialog
+
+═══════════════════════════════════════════
+FILE LOCATIONS
+═══════════════════════════════════════════
+Exports: [App Folder]/data/exports/
+Cookies: [App Folder]/cookies/
+Settings: [App Folder]/data/
+Logs: [App Folder]/logs/
+
+═══════════════════════════════════════════
+VERSION HISTORY
+═══════════════════════════════════════════
+v1.4.0 (January 2025)
+• Added dark mode with live switching
+• Added 6 export formats (JSON, SQLite, HTML, MD)
+• Improved UI/UX
+• Added comprehensive documentation
+• Bug fixes and performance improvements
+
+v1.3.0
+• Added API-based scraping
+• Added date presets
+• Added engagement filters
+• Added scrape history
+
+═══════════════════════════════════════════
+CREDITS
+═══════════════════════════════════════════
+Created by: OJ (Data Creator)
+YouTube: @datacreator
+Built with: Python, Tkinter, Twikit
+
+═══════════════════════════════════════════
+
+Thank you for using Chi Tweet Scraper!
+
+Made with ❤️ by OJ | January 2025""",
             ),
         ]
 
